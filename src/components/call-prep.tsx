@@ -13,6 +13,11 @@ import {
   Sparkles,
   RefreshCw,
   Trash2,
+  NotebookPen,
+  X,
+  Save,
+  Check,
+  Plus,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -63,7 +68,18 @@ export default function CallPrep({
   const [loadingProps, setLoadingProps] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load call prep history for specific leadId on mount / lead change
+  // Custom Checklist State
+  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
+  const [newQuestionInput, setNewQuestionInput] = useState("");
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+
+  // Call Notes Modal State
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [callNotes, setCallNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Load call prep history & custom checklist & call notes for specific leadId
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
       // Purge old un-isolated legacy key
@@ -75,19 +91,73 @@ export default function CallPrep({
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setMessages(parsed);
-            setLoadedLeadId(leadId);
-            return;
           }
         } catch {
           // Skip
         }
+      } else {
+        setMessages([]);
       }
-      setMessages([]);
+
+      // Load custom checklist items
+      const savedChecklist = localStorage.getItem(`catapult_checklist_${leadId}`);
+      if (savedChecklist) {
+        try {
+          const parsedChecklist = JSON.parse(savedChecklist);
+          if (Array.isArray(parsedChecklist)) {
+            setCustomQuestions(parsedChecklist);
+          }
+        } catch {
+          // Skip
+        }
+      } else {
+        setCustomQuestions([]);
+      }
+
       setLoadedLeadId(leadId);
+      fetchNotes();
     }
   }, [leadId]);
 
-  // Save ONLY when state is verified to belong to THIS leadId
+  // Fetch call notes from DB
+  const fetchNotes = async () => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.lead && data.lead.callNotes) {
+          setCallNotes(data.lead.callNotes);
+        } else {
+          setCallNotes("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch lead notes:", err);
+    }
+  };
+
+  // Save notes to DB via PATCH
+  const saveCallNotes = async () => {
+    setIsSavingNotes(true);
+    setSavedSuccess(false);
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ callNotes }),
+      });
+      if (res.ok) {
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 2500);
+      }
+    } catch (err) {
+      console.error("Failed to save notes:", err);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  // Save chat history ONLY when state is verified for THIS leadId
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
       if (messages.length > 0) {
@@ -97,6 +167,13 @@ export default function CallPrep({
       }
     }
   }, [messages, leadId, loadedLeadId]);
+
+  // Save custom checklist items
+  useEffect(() => {
+    if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
+      localStorage.setItem(`catapult_checklist_${leadId}`, JSON.stringify(customQuestions));
+    }
+  }, [customQuestions, leadId, loadedLeadId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -115,6 +192,19 @@ export default function CallPrep({
       localStorage.removeItem(`catapult_callprep_${leadId}`);
       localStorage.removeItem(`catapult_callprep_v2_${leadId}`);
     }
+  };
+
+  const handleAddCustomQuestion = () => {
+    if (!newQuestionInput.trim()) return;
+    const updated = [...customQuestions, newQuestionInput.trim()];
+    setCustomQuestions(updated);
+    setNewQuestionInput("");
+    setShowAddQuestion(false);
+  };
+
+  const handleRemoveCustomQuestion = (index: number) => {
+    const updated = customQuestions.filter((_, i) => i !== index);
+    setCustomQuestions(updated);
   };
 
   const fetchInitialProperties = async () => {
@@ -243,9 +333,11 @@ export default function CallPrep({
     }
   };
 
+  const allQuestions = [...callPrepQuestions, ...customQuestions];
+
   return (
-    <div className="space-y-6 w-full">
-      {/* Top: AI Call Prep Chat Window (Generous Height for Maximum Readability) */}
+    <div className="space-y-6 w-full relative">
+      {/* Top: AI Call Prep Chat Window */}
       <div className="glass-card flex flex-col h-[700px] w-full">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-surface-1/40">
           <div className="flex items-center gap-2">
@@ -254,38 +346,107 @@ export default function CallPrep({
               AI Call Prep — {leadName}
             </h3>
           </div>
-          {messages.length > 0 && (
+
+          {/* ALWAYS Visible Header Action Buttons */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowNotesModal(true)}
+              className="text-xs text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all px-2.5 py-1 rounded-lg bg-surface-2/80 border border-hairline hover:border-hairline-strong shadow-xs"
+              title="Open Call Notes"
+            >
+              <NotebookPen className="w-3.5 h-3.5 text-primary-hover" />
+              <span>Call Notes</span>
+            </button>
+
             <button
               onClick={clearPrepHistory}
-              className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-colors px-2.5 py-1 rounded bg-surface-2/60 border border-hairline/40"
+              className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-all px-2.5 py-1 rounded-lg bg-surface-2/60 border border-hairline/40 hover:bg-hot/10 hover:border-hot/30"
               title="Clear call prep history for this lead"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Clear Prep History
+              <span>Clear Prep History</span>
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Pre-call Qualification Checklist */}
+        {/* Pre-call Qualification Checklist (with manual add option) */}
         <div className="px-5 py-3.5 border-b border-hairline bg-surface-1/60">
-          <p className="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider mb-2">
-            Pre-call Qualification Checklist
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[130px] overflow-y-auto pr-1">
-            {callPrepQuestions.map((q, i) => (
-              <label
-                key={i}
-                className="flex items-start gap-2 text-xs text-ink-muted cursor-pointer group bg-surface-2/40 p-2.5 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider">
+              Pre-call Qualification Checklist ({allQuestions.length})
+            </p>
+            {!showAddQuestion && (
+              <button
+                onClick={() => setShowAddQuestion(true)}
+                className="text-xs text-primary-hover hover:underline flex items-center gap-1 font-medium"
               >
-                <input
-                  type="checkbox"
-                  className="mt-0.5 accent-primary rounded cursor-pointer"
-                />
-                <span className="group-hover:text-ink transition-colors leading-relaxed">
-                  {q}
-                </span>
-              </label>
-            ))}
+                <Plus className="w-3 h-3" /> Add item
+              </button>
+            )}
+          </div>
+
+          {/* Add custom question inline input */}
+          {showAddQuestion && (
+            <div className="flex items-center gap-2 mb-2 bg-surface-2/80 p-1.5 rounded-lg border border-primary/30">
+              <input
+                type="text"
+                value={newQuestionInput}
+                onChange={(e) => setNewQuestionInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddCustomQuestion();
+                  }
+                }}
+                placeholder="Type custom checklist question..."
+                className="flex-1 bg-transparent text-xs text-ink placeholder:text-ink-subtle px-2 py-1 focus:outline-none"
+                autoFocus
+              />
+              <button
+                onClick={handleAddCustomQuestion}
+                className="px-2.5 py-1 bg-primary text-white rounded text-xs font-semibold hover:bg-primary-hover transition-colors"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setShowAddQuestion(false)}
+                className="p-1 text-ink-subtle hover:text-ink"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[140px] overflow-y-auto pr-1">
+            {allQuestions.map((q, i) => {
+              const isCustom = i >= callPrepQuestions.length;
+              const customIndex = i - callPrepQuestions.length;
+              return (
+                <div
+                  key={i}
+                  className="flex items-start justify-between gap-2 text-xs text-ink-muted group bg-surface-2/40 p-2.5 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
+                >
+                  <label className="flex items-start gap-2 cursor-pointer flex-1">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 accent-primary rounded cursor-pointer"
+                    />
+                    <span className="group-hover:text-ink transition-colors leading-relaxed">
+                      {q}
+                    </span>
+                  </label>
+                  {isCustom && (
+                    <button
+                      onClick={() => handleRemoveCustomQuestion(customIndex)}
+                      className="text-ink-subtle hover:text-hot p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove item"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -493,6 +654,77 @@ export default function CallPrep({
           </div>
         )}
       </div>
+
+      {/* Call Notes Modal Pop-up */}
+      <AnimatePresence>
+        {showNotesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface-1 border border-hairline rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-hairline mb-4">
+                <div className="flex items-center gap-2">
+                  <NotebookPen className="w-5 h-5 text-primary-hover" />
+                  <h3 className="text-base font-semibold text-ink">
+                    Call Notes — {leadName}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowNotesModal(false)}
+                  className="p-1 rounded text-ink-subtle hover:text-ink transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-ink-subtle mb-3">
+                Record and save call notes directly to the database for future reference.
+              </p>
+
+              <textarea
+                value={callNotes}
+                onChange={(e) => setCallNotes(e.target.value)}
+                placeholder="Type your call notes here..."
+                rows={6}
+                className="w-full input-dark p-3 text-xs leading-relaxed resize-none font-sans"
+              />
+
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-hairline">
+                {savedSuccess ? (
+                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Notes saved to database!
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-ink-subtle">Stored in Neon Postgres</span>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowNotesModal(false)}
+                    className="px-3.5 py-1.5 rounded-lg border border-hairline text-xs text-ink-muted hover:text-ink hover:bg-surface-2 transition-all"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={saveCallNotes}
+                    disabled={isSavingNotes}
+                    className="btn-primary px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    {isSavingNotes ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    Save Notes
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

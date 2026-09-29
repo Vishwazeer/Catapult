@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Loader2, Trash2, NotebookPen, X, Save, Check } from "lucide-react";
 import { QUICK_CHAT_PROMPTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -14,21 +14,25 @@ interface Message {
 
 interface LeadChatProps {
   leadId: number;
+  leadName?: string;
   initialMessages?: Message[];
 }
 
-export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
+export default function LeadChat({ leadId, leadName, initialMessages }: LeadChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadedLeadId, setLoadedLeadId] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [callNotes, setCallNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load chat history for specific leadId cleanly on mount or when leadId changes
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
-      // Purge old un-isolated legacy key
       localStorage.removeItem(`catapult_chat_${leadId}`);
 
       const saved = localStorage.getItem(`catapult_chat_v2_${leadId}`);
@@ -38,6 +42,7 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setMessages(parsed);
             setLoadedLeadId(leadId);
+            fetchNotes();
             return;
           }
         } catch {
@@ -46,10 +51,49 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
       }
       setMessages([]);
       setLoadedLeadId(leadId);
+      fetchNotes();
     }
   }, [leadId]);
 
-  // Save chat history ONLY after the state has been successfully loaded for THIS leadId
+  // Fetch lead's call notes from DB
+  const fetchNotes = async () => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.lead && data.lead.callNotes) {
+          setCallNotes(data.lead.callNotes);
+        } else {
+          setCallNotes("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch lead notes:", err);
+    }
+  };
+
+  // Save notes to DB via PATCH /api/leads/[id]
+  const saveCallNotes = async () => {
+    setIsSavingNotes(true);
+    setSavedSuccess(false);
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ callNotes }),
+      });
+      if (res.ok) {
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 2500);
+      }
+    } catch (err) {
+      console.error("Failed to save notes:", err);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  // Save chat history ONLY after state is verified for THIS leadId
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
       if (messages.length > 0) {
@@ -148,25 +192,37 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
   };
 
   return (
-    <div className="glass-card flex flex-col h-[650px] w-full">
+    <div className="glass-card flex flex-col h-[650px] w-full relative">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-hairline bg-surface-1/40">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-surface-1/40">
         <div className="flex items-center gap-2">
           <Bot className="w-4 h-4 text-primary-hover" />
-          <h3 className="text-sm font-semibold text-ink">Lead Assistant</h3>
+          <h3 className="text-sm font-semibold text-ink">
+            Lead Assistant {leadName ? `— ${leadName}` : ""}
+          </h3>
         </div>
-        <div className="flex items-center gap-3">
-          {messages.length > 0 && (
-            <button
-              onClick={clearChat}
-              className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-colors px-2 py-1 rounded bg-surface-2/60 border border-hairline/40"
-              title="Clear chat history for this lead"
-            >
-              <Trash2 className="w-3 h-3" />
-              Clear History
-            </button>
-          )}
-          <span className="text-xs text-ink-subtle">
+
+        {/* ALWAYS Visible Action Buttons in Top Right Corner */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowNotesModal(true)}
+            className="text-xs text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all px-2.5 py-1 rounded-lg bg-surface-2/80 border border-hairline hover:border-hairline-strong shadow-xs"
+            title="Open Call Notes"
+          >
+            <NotebookPen className="w-3.5 h-3.5 text-primary-hover" />
+            <span>Call Notes</span>
+          </button>
+
+          <button
+            onClick={clearChat}
+            className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-all px-2.5 py-1 rounded-lg bg-surface-2/60 border border-hairline/40 hover:bg-hot/10 hover:border-hot/30"
+            title="Clear chat history for this lead"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear History</span>
+          </button>
+
+          <span className="text-xs text-ink-subtle hidden sm:inline ml-1">
             Powered by Groq
           </span>
         </div>
@@ -178,7 +234,7 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="w-8 h-8 text-primary/40 mb-3" />
             <p className="text-sm font-medium text-ink-muted mb-1">
-              Ask questions about this lead
+              Ask questions about {leadName || "this lead"}
             </p>
             <p className="text-xs text-ink-subtle">
               Get actionable advice grounded in lead context
@@ -278,6 +334,77 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
           </button>
         </div>
       </div>
+
+      {/* Call Notes Modal Pop-up */}
+      <AnimatePresence>
+        {showNotesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface-1 border border-hairline rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-hairline mb-4">
+                <div className="flex items-center gap-2">
+                  <NotebookPen className="w-5 h-5 text-primary-hover" />
+                  <h3 className="text-base font-semibold text-ink">
+                    Call Notes {leadName ? `— ${leadName}` : ""}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowNotesModal(false)}
+                  className="p-1 rounded text-ink-subtle hover:text-ink transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-ink-subtle mb-3">
+                Record and save call notes directly to the database for future reference.
+              </p>
+
+              <textarea
+                value={callNotes}
+                onChange={(e) => setCallNotes(e.target.value)}
+                placeholder="Type your call notes here..."
+                rows={6}
+                className="w-full input-dark p-3 text-xs leading-relaxed resize-none font-sans"
+              />
+
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-hairline">
+                {savedSuccess ? (
+                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Notes saved to database!
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-ink-subtle">Stored in Neon Postgres</span>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowNotesModal(false)}
+                    className="px-3.5 py-1.5 rounded-lg border border-hairline text-xs text-ink-muted hover:text-ink hover:bg-surface-2 transition-all"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={saveCallNotes}
+                    disabled={isSavingNotes}
+                    className="btn-primary px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    {isSavingNotes ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    Save Notes
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -32,6 +32,28 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const leadId = parseInt(id, 10);
+    const body = await req.json();
+    const { callNotes } = body;
+
+    await db
+      .update(leads)
+      .set({ callNotes, updatedAt: new Date() })
+      .where(eq(leads.id, leadId));
+
+    return NextResponse.json({ success: true, callNotes });
+  } catch (error) {
+    console.error('Error updating lead notes:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

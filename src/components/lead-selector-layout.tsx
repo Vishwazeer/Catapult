@@ -214,7 +214,7 @@ export default function LeadSelectorLayout({
                   )}
 
                   {feature === "chat" && (
-                    <LeadChat key={selectedItem.lead.id} leadId={selectedItem.lead.id} />
+                    <LeadChat key={selectedItem.lead.id} leadId={selectedItem.lead.id} leadName={selectedItem.lead.name} />
                   )}
 
                   {(feature === "callprep" || feature === "call-prep") && selectedItem.analysis && (

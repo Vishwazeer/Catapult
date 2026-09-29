@@ -28,6 +28,7 @@ export const leads = pgTable('leads', {
   mustHaveFeatures: text('must_have_features'),
   dealBreakers: text('deal_breakers'),
   customerMessage: text('customer_message').notNull(),
+  callNotes: text('call_notes'),
   source: text('source'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
