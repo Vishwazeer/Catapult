@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/sidebar";
 import AnalysisDisplay from "@/components/analysis-display";
@@ -21,10 +21,15 @@ import {
   Brain,
   Sparkles,
   Trash2,
+  Flame,
+  Sun,
+  Snowflake,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, getScoreColor } from "@/lib/utils";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { TagBadge } from "@/components/lead-card";
 
 interface LeadData {
   id: number;
@@ -87,6 +92,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("analysis");
   const [deleting, setDeleting] = useState(false);
+  const [showMessageDetails, setShowMessageDetails] = useState(false);
 
   useEffect(() => {
     fetchLead();
@@ -124,7 +130,7 @@ export default function LeadDetailPage() {
     return (
       <>
         <Sidebar />
-        <main className="flex-1 ml-[260px] p-8 flex items-center justify-center">
+        <main className="flex-1 ml-[260px] p-8 flex items-center justify-center min-h-screen">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </main>
       </>
@@ -135,7 +141,7 @@ export default function LeadDetailPage() {
     return (
       <>
         <Sidebar />
-        <main className="flex-1 ml-[260px] p-8 flex flex-col items-center justify-center">
+        <main className="flex-1 ml-[260px] p-8 flex flex-col items-center justify-center min-h-screen">
           <p className="text-ink-muted mb-4">Lead not found</p>
           <Link href="/" className="btn-secondary">
             Back to Dashboard
@@ -145,74 +151,86 @@ export default function LeadDetailPage() {
     );
   }
 
-  const tabs = [
-    { id: "analysis" as TabType, label: "AI Analysis", icon: Brain },
-    { id: "chat" as TabType, label: "Lead Chat", icon: MessageSquare },
-    { id: "callprep" as TabType, label: "Call Prep", icon: Sparkles },
-  ];
-
   return (
     <>
       <Sidebar />
-      <main className="flex-1 ml-[260px] p-8">
-        {/* Top Bar */}
+      <main className="flex-1 ml-[260px] p-8 max-w-7xl mx-auto">
+        {/* Top Header & Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
         >
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="p-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-1 transition-all"
+              className="p-2 rounded-lg border border-hairline bg-surface-1 text-ink-subtle hover:text-ink hover:bg-surface-2 transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="font-display text-2xl font-semibold text-ink tracking-wide">
-                {lead.name}
-              </h1>
-              <div className="flex items-center gap-3 text-sm text-ink-muted mt-0.5">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-3xl font-semibold text-ink tracking-wide">
+                  {lead.name}
+                </h1>
+                {analysis && <TagBadge tag={analysis.tag} />}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-ink-subtle mt-1">
+                <span className="flex items-center gap-1 font-medium text-ink-muted">
+                  <MapPin className="w-3.5 h-3.5 text-primary-hover" />
                   {lead.location}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Building2 className="w-3 h-3" />
-                  {lead.propertyType}
+                  <Building2 className="w-3.5 h-3.5" />
+                  {lead.propertyType} {lead.bhkConfig ? `(${lead.bhkConfig})` : ""}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <Calendar className="w-3.5 h-3.5" />
                   {formatDate(lead.createdAt)}
                 </span>
               </div>
             </div>
           </div>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="p-2 rounded-md text-ink-subtle hover:text-hot hover:bg-hot/10 transition-all"
-          >
-            {deleting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
+
+          <div className="flex items-center gap-3">
+            {analysis && (
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-1 border border-hairline shadow-sm">
+                <span className="text-xs text-ink-subtle uppercase tracking-wider font-semibold">
+                  AI Score
+                </span>
+                <span className={cn("font-mono text-2xl font-bold", getScoreColor(analysis.score))}>
+                  {analysis.score}
+                </span>
+              </div>
             )}
-          </button>
+
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-2.5 rounded-xl border border-hairline text-ink-subtle hover:text-hot hover:bg-hot/10 hover:border-hot/30 transition-all"
+              title="Delete Lead"
+            >
+              {deleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </motion.div>
 
-        {/* Lead Info Summary Bar */}
+        {/* Compact Quick Metadata Bar */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
           className="glass-card p-4 mb-6"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
             {lead.phone && (
               <div>
-                <span className="text-xs text-ink-subtle block">Phone</span>
-                <span className="text-ink flex items-center gap-1 mt-0.5">
+                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Phone</span>
+                <span className="text-ink font-mono mt-0.5 flex items-center gap-1">
                   <Phone className="w-3 h-3 text-ink-subtle" />
                   {lead.phone}
                 </span>
@@ -220,92 +238,270 @@ export default function LeadDetailPage() {
             )}
             {lead.email && (
               <div>
-                <span className="text-xs text-ink-subtle block">Email</span>
-                <span className="text-ink flex items-center gap-1 mt-0.5">
+                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Email</span>
+                <span className="text-ink truncate mt-0.5 flex items-center gap-1">
                   <Mail className="w-3 h-3 text-ink-subtle" />
                   {lead.email}
                 </span>
               </div>
             )}
             <div>
-              <span className="text-xs text-ink-subtle block">Budget</span>
-              <span className="text-ink flex items-center gap-1 mt-0.5">
-                <IndianRupee className="w-3 h-3 text-ink-subtle" />
+              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Budget</span>
+              <span className="text-primary-hover font-mono font-bold mt-0.5 flex items-center gap-0.5">
+                <IndianRupee className="w-3 h-3" />
                 {lead.budgetMin ? formatCurrency(lead.budgetMin) : "N/A"}
                 {lead.budgetMin && lead.budgetMax ? " – " : ""}
                 {lead.budgetMax ? formatCurrency(lead.budgetMax) : ""}
               </span>
             </div>
             <div>
-              <span className="text-xs text-ink-subtle block">Timeline</span>
-              <span className="text-ink mt-0.5 block">{lead.buyingTimeline}</span>
+              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Timeline</span>
+              <span className="text-ink font-medium mt-0.5 block">{lead.buyingTimeline}</span>
             </div>
-            {lead.bhkConfig && (
-              <div>
-                <span className="text-xs text-ink-subtle block">Config</span>
-                <span className="text-ink mt-0.5 block">{lead.bhkConfig}</span>
-              </div>
-            )}
+            <div>
+              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Financing</span>
+              <span className="text-ink font-medium mt-0.5 block capitalize">
+                {lead.loanReady ? `Loan (${lead.loanReady})` : "Not specified"}
+              </span>
+            </div>
             {lead.source && (
               <div>
-                <span className="text-xs text-ink-subtle block">Source</span>
-                <span className="text-ink mt-0.5 block capitalize">
+                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Source</span>
+                <span className="text-ink font-medium mt-0.5 block capitalize">
                   {lead.source}
                 </span>
               </div>
             )}
           </div>
+
+          {/* Expandable Customer Message */}
           {lead.customerMessage && (
-            <div className="mt-4 pt-4 border-t border-hairline">
-              <span className="text-xs text-ink-subtle block mb-1">
-                Customer Message
-              </span>
-              <p className="text-sm text-ink-muted leading-relaxed">
-                {lead.customerMessage}
-              </p>
+            <div className="mt-3 pt-3 border-t border-hairline/60">
+              <button
+                onClick={() => setShowMessageDetails(!showMessageDetails)}
+                className="flex items-center justify-between w-full text-xs text-ink-subtle hover:text-ink transition-colors"
+              >
+                <span className="font-medium text-ink-muted flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-primary-hover" />
+                  Customer Message: &quot;{lead.customerMessage.slice(0, 75)}{lead.customerMessage.length > 75 ? "..." : ""}&quot;
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-primary-hover font-medium">
+                  {showMessageDetails ? "Hide full message" : "View full message"}
+                  {showMessageDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </span>
+              </button>
+
+              {showMessageDetails && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="mt-2.5 text-xs text-ink-muted leading-relaxed bg-surface-2/60 p-3 rounded-lg border border-hairline/40 italic"
+                >
+                  &quot;{lead.customerMessage}&quot;
+                </motion.p>
+              )}
             </div>
           )}
         </motion.div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-surface-1 rounded-lg p-1 border border-hairline w-fit">
-          {tabs.map((tab) => (
+        {/* ============================================================ */}
+        {/* HERO AI INTELLIGENCE FEATURE SUITE (PROMINENT BOLD FEATURE TABS) */}
+        {/* ============================================================ */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold text-ink-subtle uppercase tracking-widest flex items-center gap-2">
+              <Brain className="w-4 h-4 text-primary-hover animate-pulse" />
+              AI Sales Intelligence Suite
+            </h2>
+            <span className="text-[11px] text-primary-hover font-semibold bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+              Core Product Components
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Tab 1: AI Analysis */}
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab("analysis")}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-                activeTab === tab.id
-                  ? "bg-primary/15 text-primary-hover"
-                  : "text-ink-muted hover:text-ink hover:bg-surface-2"
+                "p-4 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between h-[95px]",
+                activeTab === "analysis"
+                  ? "bg-gradient-to-r from-primary/20 via-primary/10 to-surface-2 border-primary shadow-lg shadow-primary/10"
+                  : "bg-surface-1 hover:bg-surface-2 border-hairline hover:border-hairline-strong"
               )}
             >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                      activeTab === "analysis"
+                        ? "bg-primary text-white"
+                        : "bg-surface-2 text-primary-hover group-hover:bg-primary/20"
+                    )}
+                  >
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-ink group-hover:text-primary-hover transition-colors">
+                      AI Analysis
+                    </h3>
+                    <p className="text-[11px] text-ink-subtle">
+                      Intent, score & objection map
+                    </p>
+                  </div>
+                </div>
+                {analysis && (
+                  <span
+                    className={cn(
+                      "font-mono text-base font-bold px-2 py-0.5 rounded-md bg-surface-2 border border-hairline/60",
+                      getScoreColor(analysis.score)
+                    )}
+                  >
+                    {analysis.score}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline/40 text-[11px]">
+                <span className="text-ink-subtle">Gemini 2.5 Structured</span>
+                <span
+                  className={cn(
+                    "font-semibold uppercase tracking-wider",
+                    activeTab === "analysis" ? "text-primary-hover" : "text-ink-subtle"
+                  )}
+                >
+                  {activeTab === "analysis" ? "Active View →" : "Click to view"}
+                </span>
+              </div>
             </button>
-          ))}
-        </div>
 
-        {/* Tab Content */}
-        {activeTab === "analysis" && analysis && (
-          <AnalysisDisplay analysis={analysis} />
-        )}
+            {/* Tab 2: Lead Chat */}
+            <button
+              onClick={() => setActiveTab("chat")}
+              className={cn(
+                "p-4 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between h-[95px]",
+                activeTab === "chat"
+                  ? "bg-gradient-to-r from-primary/20 via-primary/10 to-surface-2 border-primary shadow-lg shadow-primary/10"
+                  : "bg-surface-1 hover:bg-surface-2 border-hairline hover:border-hairline-strong"
+              )}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                      activeTab === "chat"
+                        ? "bg-primary text-white"
+                        : "bg-surface-2 text-primary-hover group-hover:bg-primary/20"
+                    )}
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-ink group-hover:text-primary-hover transition-colors">
+                      Lead Chat
+                    </h3>
+                    <p className="text-[11px] text-ink-subtle">
+                      Interactive Groq AI assistant
+                    </p>
+                  </div>
+                </div>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline/40 text-[11px]">
+                <span className="text-ink-subtle">Groq Streaming Chat</span>
+                <span
+                  className={cn(
+                    "font-semibold uppercase tracking-wider",
+                    activeTab === "chat" ? "text-primary-hover" : "text-ink-subtle"
+                  )}
+                >
+                  {activeTab === "chat" ? "Active View →" : "Click to chat"}
+                </span>
+              </div>
+            </button>
 
-        {activeTab === "chat" && (
-          <LeadChat leadId={leadId} initialMessages={chatMessages} />
-        )}
+            {/* Tab 3: Call Prep */}
+            <button
+              onClick={() => setActiveTab("callprep")}
+              className={cn(
+                "p-4 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between h-[95px]",
+                activeTab === "callprep"
+                  ? "bg-gradient-to-r from-primary/20 via-primary/10 to-surface-2 border-primary shadow-lg shadow-primary/10"
+                  : "bg-surface-1 hover:bg-surface-2 border-hairline hover:border-hairline-strong"
+              )}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                      activeTab === "callprep"
+                        ? "bg-primary text-white"
+                        : "bg-surface-2 text-primary-hover group-hover:bg-primary/20"
+                    )}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-ink group-hover:text-primary-hover transition-colors">
+                      AI Call Prep
+                    </h3>
+                    <p className="text-[11px] text-ink-subtle">
+                      Live property database search
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/20 text-primary-hover border border-primary/30">
+                  Custom Feature
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline/40 text-[11px]">
+                <span className="text-ink-subtle">Split-panel Inventory</span>
+                <span
+                  className={cn(
+                    "font-semibold uppercase tracking-wider",
+                    activeTab === "callprep" ? "text-primary-hover" : "text-ink-subtle"
+                  )}
+                >
+                  {activeTab === "callprep" ? "Active View →" : "Click to prep"}
+                </span>
+              </div>
+            </button>
+          </div>
+        </motion.div>
 
-        {activeTab === "callprep" && analysis && (
-          <CallPrep
-            leadId={leadId}
-            leadName={lead.name}
-            leadLocation={lead.location}
-            leadPropertyType={lead.propertyType}
-            leadBhk={lead.bhkConfig || undefined}
-            leadBudgetMax={lead.budgetMax || undefined}
-            callPrepQuestions={analysis.callPrepQuestions}
-          />
-        )}
+        {/* Tab Content Display */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {activeTab === "analysis" && analysis && (
+            <AnalysisDisplay analysis={analysis} />
+          )}
+
+          {activeTab === "chat" && (
+            <LeadChat leadId={leadId} initialMessages={chatMessages} />
+          )}
+
+          {activeTab === "callprep" && analysis && (
+            <CallPrep
+              leadId={leadId}
+              leadName={lead.name}
+              leadLocation={lead.location}
+              leadPropertyType={lead.propertyType}
+              leadBhk={lead.bhkConfig || undefined}
+              leadBudgetMax={lead.budgetMax || undefined}
+              callPrepQuestions={analysis.callPrepQuestions}
+            />
+          )}
+        </motion.div>
       </main>
     </>
   );
