@@ -1,8 +1,10 @@
-import { google } from '@ai-sdk/google';
+import { createGroq } from '@ai-sdk/groq';
 import { streamText, type CoreMessage } from 'ai';
 import { db } from '@/db';
 import { properties } from '@/db/schema';
 import { and, gte, lte, ilike, eq, or } from 'drizzle-orm';
+
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export type PropertySearchQuery = {
   location?: string;
@@ -93,7 +95,7 @@ Instructions:
   ];
 
   return streamText({
-    model: google('gemini-flash-latest'),
+    model: groq('openai/gpt-oss-120b'),
     system: systemPrompt,
     messages,
   });

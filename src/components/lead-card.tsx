@@ -12,6 +12,9 @@ import {
   ArrowRight,
   Building2,
   User,
+  Sparkles,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,6 +36,8 @@ interface LeadCardProps {
     intent: string;
   } | null;
   index?: number;
+  onScan?: (id: number) => void;
+  isScanning?: boolean;
 }
 
 function TagBadge({ tag }: { tag: string }) {
@@ -52,7 +57,13 @@ function TagBadge({ tag }: { tag: string }) {
   );
 }
 
-export default function LeadCard({ lead, analysis, index = 0 }: LeadCardProps) {
+export default function LeadCard({
+  lead,
+  analysis,
+  index = 0,
+  onScan,
+  isScanning = false,
+}: LeadCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -64,7 +75,7 @@ export default function LeadCard({ lead, analysis, index = 0 }: LeadCardProps) {
       }}
     >
       <Link href={`/leads/${lead.id}`}>
-        <div className="glass-card-hover p-5 cursor-pointer group">
+        <div className="glass-card-hover p-5 cursor-pointer group relative">
           {/* Header: Name + Tag + Score */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -82,25 +93,64 @@ export default function LeadCard({ lead, analysis, index = 0 }: LeadCardProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {analysis && <TagBadge tag={analysis.tag} />}
-              {analysis && (
-                <div
-                  className={cn(
-                    "font-mono text-lg font-bold",
-                    getScoreColor(analysis.score)
-                  )}
-                >
-                  {analysis.score}
-                </div>
+              {analysis ? (
+                <>
+                  <TagBadge tag={analysis.tag} />
+                  <div
+                    className={cn(
+                      "font-mono text-lg font-bold",
+                      getScoreColor(analysis.score)
+                    )}
+                  >
+                    {analysis.score}
+                  </div>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/15 text-primary-hover border border-primary/20">
+                  <Sparkles className="w-3 h-3 animate-pulse" />
+                  {isScanning ? "Scanning..." : "Pending Scan"}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Summary */}
-          {analysis && (
+          {/* Summary or Pending Scan CTA */}
+          {analysis ? (
             <p className="text-sm text-ink-muted line-clamp-2 mb-3">
               {analysis.summary}
             </p>
+          ) : (
+            <div className="py-2.5 px-3 mb-3 rounded-lg bg-surface-1/80 border border-hairline flex items-center justify-between">
+              <span className="text-xs text-ink-muted">
+                {isScanning
+                  ? "AI extracting intent & scoring..."
+                  : "AI analysis pending for this lead"}
+              </span>
+              {onScan && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onScan(lead.id);
+                  }}
+                  disabled={isScanning}
+                  className="text-xs px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  {isScanning ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3" />
+                      Scan Now
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
 
           {/* Meta Row */}

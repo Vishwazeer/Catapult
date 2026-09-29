@@ -122,7 +122,7 @@ export default function LeadForm() {
       
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.id) {
-        router.push(`/leads/${data.id}`);
+        router.push('/');
       } else {
         const errorMsg = data.error || 'Submission failed. Please check your network or try again.';
         console.error('Submission failed:', errorMsg);

@@ -41,23 +41,30 @@ export async function POST(req: NextRequest) {
     
     const [lead] = await db.insert(leads).values(leadData).returning();
     
-    const analysis = await analyzeLead(leadData);
+    // Asynchronous background AI analysis — user is never blocked
+    (async () => {
+      try {
+        const analysis = await analyzeLead(leadData);
+        await db.insert(leadAnalyses).values({
+          leadId: lead.id,
+          summary: analysis.summary,
+          intent: analysis.intent,
+          keyRequirements: analysis.keyRequirements,
+          objectionsAndConcerns: analysis.objectionsAndConcerns,
+          recommendedNextAction: analysis.recommendedNextAction,
+          suggestedResponse: analysis.suggestedResponse,
+          score: analysis.score,
+          tag: analysis.tag,
+          reasoning: analysis.reasoning,
+          callPrepQuestions: analysis.callPrepQuestions,
+        });
+        console.log(`AI analysis completed successfully for lead ${lead.id}`);
+      } catch (err) {
+        console.error(`Background analysis failed for lead ${lead.id}:`, err);
+      }
+    })();
     
-    const [insertedAnalysis] = await db.insert(leadAnalyses).values({
-      leadId: lead.id,
-      summary: analysis.summary,
-      intent: analysis.intent,
-      keyRequirements: analysis.keyRequirements,
-      objectionsAndConcerns: analysis.objectionsAndConcerns,
-      recommendedNextAction: analysis.recommendedNextAction,
-      suggestedResponse: analysis.suggestedResponse,
-      score: analysis.score,
-      tag: analysis.tag,
-      reasoning: analysis.reasoning,
-      callPrepQuestions: analysis.callPrepQuestions,
-    }).returning();
-    
-    return NextResponse.json({ id: lead.id, lead, analysis: insertedAnalysis }, { status: 201 });
+    return NextResponse.json({ id: lead.id, lead, status: 'saved' }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating lead:', error);
     return NextResponse.json({ error: error?.message || 'Internal Server Error' }, { status: 500 });
