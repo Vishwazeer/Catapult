@@ -299,6 +299,10 @@ export default function LeadDetailPage() {
           <CallPrep
             leadId={leadId}
             leadName={lead.name}
+            leadLocation={lead.location}
+            leadPropertyType={lead.propertyType}
+            leadBhk={lead.bhkConfig || undefined}
+            leadBudgetMax={lead.budgetMax || undefined}
             callPrepQuestions={analysis.callPrepQuestions}
           />
         )}
