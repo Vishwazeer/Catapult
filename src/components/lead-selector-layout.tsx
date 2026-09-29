@@ -32,7 +32,7 @@ interface LeadWithAnalysis {
 }
 
 interface LeadSelectorLayoutProps {
-  feature: "analysis" | "chat" | "callprep";
+  feature: "analysis" | "chat" | "callprep" | "call-prep";
   title: string;
   subtitle: string;
   icon: React.ElementType;
@@ -214,11 +214,12 @@ export default function LeadSelectorLayout({
                   )}
 
                   {feature === "chat" && (
-                    <LeadChat leadId={selectedItem.lead.id} />
+                    <LeadChat key={selectedItem.lead.id} leadId={selectedItem.lead.id} />
                   )}
 
-                  {feature === "callprep" && selectedItem.analysis && (
+                  {(feature === "callprep" || feature === "call-prep") && selectedItem.analysis && (
                     <CallPrep
+                      key={selectedItem.lead.id}
                       leadId={selectedItem.lead.id}
                       leadName={selectedItem.lead.name}
                       leadLocation={selectedItem.lead.location}

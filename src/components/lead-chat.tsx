@@ -32,13 +32,15 @@ export default function LeadChat({ leadId, initialMessages = [] }: LeadChatProps
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setMessages(parsed);
+            return;
           }
         } catch {
           // Skip
         }
       }
+      setMessages(initialMessages || []);
     }
-  }, [leadId]);
+  }, [leadId, initialMessages]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && messages.length > 0) {

@@ -71,11 +71,13 @@ export default function CallPrep({
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setMessages(parsed);
+            return;
           }
         } catch {
           // Skip
         }
       }
+      setMessages([]);
     }
   }, [leadId]);
 
@@ -227,9 +229,9 @@ export default function CallPrep({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Left: Call Prep Questions + Chat */}
-      <div className="glass-card flex flex-col h-[650px]">
+    <div className="space-y-6 w-full">
+      {/* Top: AI Call Prep Chat Window (Full Width for Maximum Readability) */}
+      <div className="glass-card flex flex-col h-[580px] w-full">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-hairline bg-surface-1/40">
           <Phone className="w-4 h-4 text-primary-hover" />
           <h3 className="text-sm font-semibold text-ink">
@@ -237,16 +239,16 @@ export default function CallPrep({
           </h3>
         </div>
 
-        {/* Questions Checklist */}
-        <div className="px-4 py-3 border-b border-hairline bg-surface-1/60">
+        {/* Pre-call Qualification Checklist */}
+        <div className="px-5 py-3 border-b border-hairline bg-surface-1/60">
           <p className="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider mb-2">
             Pre-call Qualification Checklist
           </p>
-          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[100px] overflow-y-auto pr-1">
             {callPrepQuestions.map((q, i) => (
               <label
                 key={i}
-                className="flex items-start gap-2 text-xs text-ink-muted cursor-pointer group"
+                className="flex items-start gap-2 text-xs text-ink-muted cursor-pointer group bg-surface-2/40 p-2 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
               >
                 <input
                   type="checkbox"
@@ -261,15 +263,15 @@ export default function CallPrep({
         </div>
 
         {/* Chat History */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
               <Sparkles className="w-8 h-8 text-primary/40 mb-3" />
               <p className="text-sm font-medium text-ink-muted mb-1">
                 Prepare for call with {leadName}
               </p>
-              <p className="text-xs text-ink-subtle max-w-xs">
-                Ask for property comparisons, objection handling, or quick picks.
+              <p className="text-xs text-ink-subtle max-w-sm">
+                Ask for property comparisons, objection handling, or quick picks. Output tables and formatted markdown have maximum width for crystal clear readability.
               </p>
             </div>
           )}
@@ -281,18 +283,18 @@ export default function CallPrep({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                  "flex gap-2.5",
+                  "flex gap-3",
                   msg.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="w-3.5 h-3.5 text-primary-hover" />
+                  <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-4 h-4 text-primary-hover" />
                   </div>
                 )}
                 <div
                   className={cn(
-                    "max-w-[88%] rounded-lg px-3.5 py-2.5 text-sm overflow-hidden",
+                    "max-w-[92%] rounded-xl px-4 py-3 text-sm overflow-hidden shadow-sm",
                     msg.role === "user"
                       ? "bg-primary text-white font-medium"
                       : "bg-surface-2 text-ink-muted border border-hairline"
@@ -306,7 +308,7 @@ export default function CallPrep({
                         <MarkdownRenderer content={msg.content} />
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-ink-subtle text-xs">
-                          <Loader2 className="w-3 h-3 animate-spin text-primary-hover" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-hover" />
                           Preparing call prep advice...
                         </span>
                       )}
@@ -314,8 +316,8 @@ export default function CallPrep({
                   )}
                 </div>
                 {msg.role === "user" && (
-                  <div className="w-6 h-6 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-3.5 h-3.5 text-ink-muted" />
+                  <div className="w-7 h-7 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4 text-ink-muted" />
                   </div>
                 )}
               </motion.div>
@@ -325,7 +327,7 @@ export default function CallPrep({
 
         {/* Quick Actions */}
         {messages.length === 0 && (
-          <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+          <div className="px-5 pb-3 flex flex-wrap gap-2">
             {[
               "Give list of properties that match",
               `Properties in ${leadLocation || 'Gurugram'} under ${leadBudgetMax || 150}L`,
@@ -335,7 +337,7 @@ export default function CallPrep({
               <button
                 key={prompt}
                 onClick={() => sendMessage(prompt)}
-                className="text-xs px-2.5 py-1 rounded-full bg-surface-1 text-ink-subtle hover:text-ink hover:bg-surface-2 transition-all border border-hairline"
+                className="text-xs px-3 py-1.5 rounded-full bg-surface-1 text-ink-subtle hover:text-ink hover:bg-surface-2 transition-all border border-hairline"
               >
                 {prompt}
               </button>
@@ -344,23 +346,23 @@ export default function CallPrep({
         )}
 
         {/* Input */}
-        <div className="p-3 border-t border-hairline bg-surface-1/40">
-          <div className="flex items-center gap-2 bg-surface-1 rounded-lg border border-hairline p-1.5 focus-within:border-primary/50 transition-colors">
+        <div className="p-4 border-t border-hairline bg-surface-1/40">
+          <div className="flex items-center gap-2 bg-surface-1 rounded-xl border border-hairline p-2 focus-within:border-primary/50 transition-colors shadow-inner">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search properties or ask prep questions..."
-              className="flex-1 bg-transparent border-0 px-2 py-1 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
+              className="flex-1 bg-transparent border-0 px-3 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
             />
             <button
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || isLoading}
               className={cn(
-                "p-2 rounded-md transition-all",
+                "p-2.5 rounded-lg transition-all flex items-center justify-center",
                 input.trim() && !isLoading
-                  ? "bg-primary text-white hover:bg-primary-hover"
+                  ? "bg-primary text-white hover:bg-primary-hover shadow-md shadow-primary/20"
                   : "bg-surface-2 text-ink-subtle cursor-not-allowed"
               )}
             >
@@ -370,12 +372,14 @@ export default function CallPrep({
         </div>
       </div>
 
-      {/* Right: Property Matches Window */}
-      <div className="glass-card flex flex-col h-[650px]">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-hairline bg-surface-1/40">
+      {/* Bottom: Horizontal Property Matches Grid */}
+      <div className="glass-card p-5 w-full">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-hairline">
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary-hover" />
-            <h3 className="text-sm font-semibold text-ink">Property Matches</h3>
+            <h3 className="text-sm font-semibold text-ink">
+              Property Inventory Matches
+            </h3>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -385,84 +389,82 @@ export default function CallPrep({
             >
               <RefreshCw className={cn("w-3.5 h-3.5", loadingProps && "animate-spin")} />
             </button>
-            <span className="text-xs font-mono text-primary-hover bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              {properties.length} matched
+            <span className="text-xs font-mono text-primary-hover bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20 font-bold">
+              {properties.length} matched properties
             </span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {loadingProps && properties.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Loader2 className="w-6 h-6 text-primary animate-spin mb-2" />
-              <p className="text-xs text-ink-subtle">Searching property inventory...</p>
-            </div>
-          ) : properties.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Building2 className="w-8 h-8 text-ink-subtle/30 mb-3" />
-              <p className="text-sm text-ink-subtle">No matching properties found</p>
-              <button
-                onClick={fetchInitialProperties}
-                className="mt-3 text-xs text-primary-hover hover:underline flex items-center gap-1"
-              >
-                <RefreshCw className="w-3 h-3" /> Load all properties
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <AnimatePresence>
-                {properties.map((prop, i) => (
-                  <motion.div
-                    key={prop.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="bg-surface-2/90 hover:bg-surface-2 rounded-xl p-4 border border-hairline hover:border-primary/40 transition-all shadow-sm"
-                  >
+        {loadingProps && properties.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Loader2 className="w-6 h-6 text-primary animate-spin mb-2" />
+            <p className="text-xs text-ink-subtle">Searching property inventory...</p>
+          </div>
+        ) : properties.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Building2 className="w-8 h-8 text-ink-subtle/30 mb-3" />
+            <p className="text-sm text-ink-subtle">No matching properties found</p>
+            <button
+              onClick={fetchInitialProperties}
+              className="mt-3 text-xs text-primary-hover hover:underline flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" /> Load all properties
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <AnimatePresence>
+              {properties.map((prop, i) => (
+                <motion.div
+                  key={prop.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="bg-surface-2/90 hover:bg-surface-2 rounded-xl p-4 border border-hairline hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between"
+                >
+                  <div>
                     <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="text-sm font-semibold text-ink group-hover:text-primary-hover transition-colors">
-                          {prop.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <MapPin className="w-3 h-3 text-ink-subtle" />
-                          <span className="text-xs text-ink-muted font-medium">
-                            {prop.location}, {prop.city}
-                          </span>
-                        </div>
-                      </div>
+                      <h4 className="text-sm font-semibold text-ink group-hover:text-primary-hover transition-colors line-clamp-1">
+                        {prop.name}
+                      </h4>
                       <div className="text-right">
-                        <div className="text-sm font-mono font-bold text-primary-hover">
+                        <div className="text-sm font-mono font-bold text-primary-hover whitespace-nowrap">
                           {formatCurrency(prop.priceInr)}
                         </div>
-                        <span className="text-[11px] text-ink-subtle font-mono">
-                          {prop.sqft} sq.ft
-                        </span>
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-hairline/40">
-                      {prop.bhk && (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/15 text-primary-hover border border-primary/20">
-                          {prop.bhk}
-                        </span>
-                      )}
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-muted capitalize">
-                        {prop.type}
+                    <div className="flex items-center justify-between text-xs text-ink-muted mb-2">
+                      <span className="flex items-center gap-1 text-ink-subtle">
+                        <MapPin className="w-3 h-3 text-primary-hover" />
+                        {prop.location}, {prop.city}
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-muted capitalize">
-                        {prop.possessionStatus}
-                      </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-subtle">
-                        {prop.builder}
+                      <span className="font-mono text-ink-subtle text-[11px]">
+                        {prop.sqft} sq.ft
                       </span>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-hairline/40 mt-2">
+                    {prop.bhk && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/15 text-primary-hover border border-primary/20">
+                        {prop.bhk}
+                      </span>
+                    )}
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-muted capitalize">
+                      {prop.type}
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-muted capitalize">
+                      {prop.possessionStatus}
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-surface-3 text-ink-subtle">
+                      {prop.builder}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   );
