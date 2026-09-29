@@ -70,6 +70,29 @@ Designed to solve a major real-estate sales challenge:
 
 ---
 
+## 🌐 Vercel Deployment
+
+1. **Import Repository to Vercel**:
+   - Go to [Vercel Dashboard](https://vercel.com/new).
+   - Select your GitHub repository: `Vishwazeer/Catapult`.
+   - Framework Preset: **Next.js**.
+
+2. **Add Environment Variables**:
+   In Vercel Project Settings → **Environment Variables**, add:
+   - `DATABASE_URL` — Neon Postgres connection string (`postgresql://...`)
+   - `GOOGLE_GENERATIVE_AI_API_KEY` — Google AI Studio API key
+   - `GROQ_API_KEY` — Groq Cloud API key
+
+3. **Deploy & Database Setup**:
+   - Click **Deploy**.
+   - If deploying to a new database, run migrations and seed sample properties locally:
+     ```bash
+     npx drizzle-kit push
+     npx tsx src/db/seed.ts
+     ```
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Framework**: Next.js 15 (App Router, React 19, TypeScript)
