@@ -29,6 +29,7 @@ export const leads = pgTable('leads', {
   dealBreakers: text('deal_breakers'),
   customerMessage: text('customer_message').notNull(),
   callNotes: text('call_notes'),
+  phase: text('phase').default('Incoming'),
   source: text('source'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -54,6 +55,14 @@ export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
   leadId: integer('lead_id').references(() => leads.id).notNull(),
   role: text('role').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const simulationMessages = pgTable('simulation_messages', {
+  id: serial('id').primaryKey(),
+  leadId: integer('lead_id').references(() => leads.id).notNull(),
+  role: text('role').notNull(), // 'salesperson' | 'customer'
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });

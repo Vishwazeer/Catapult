@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,57 +6,60 @@
 
 @layer base {
   :root {
-    --background: 240 33% 4%;
-    --foreground: 240 20% 95%;
+    --background: 30 25% 93%;
+    --foreground: 220 20% 10%;
   }
 
   * {
-    @apply border-hairline;
+    @apply border-[#EADFD5];
   }
 
   body {
-    @apply bg-canvas text-ink font-sans antialiased;
+    @apply bg-[#F4EEE8] text-stone-900 font-sans antialiased selection:bg-stone-300 selection:text-stone-900;
   }
 
-  /* Custom scrollbar for dark theme */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans tracking-tight text-stone-900;
+  }
+
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-canvas;
+    @apply bg-[#F4EEE8];
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-hairline-strong rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-ink-subtle;
-  }
-
-  /* Selection color */
-  ::selection {
-    @apply bg-primary/30 text-ink;
+    @apply bg-stone-300 rounded-full hover:bg-stone-400;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-surface-1/80 backdrop-blur-xl border border-hairline rounded-lg;
+    @apply bg-white border border-[#EADFD5] rounded-3xl p-6 md:p-8 shadow-sm shadow-stone-200/40;
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:bg-surface-2/80 hover:border-hairline-strong hover:shadow-lg hover:shadow-primary/5;
+    @apply glass-card transition-all duration-200 hover:border-[#D8C9BC] hover:shadow-md;
+  }
+
+  .sub-card {
+    @apply bg-[#FAF6F1] border border-[#EADFD5]/80 rounded-2xl p-5 transition-all;
+  }
+
+  .glass-panel {
+    @apply bg-white/95 backdrop-blur-md border border-[#EADFD5] shadow-xl shadow-stone-900/5 rounded-3xl;
   }
 
   .glow-border {
-    @apply border border-primary/30 shadow-[0_0_15px_rgba(15,118,110,0.15)];
+    @apply border border-emerald-500/30 shadow-[0_0_20px_rgba(5,150,105,0.08)];
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-hover to-primary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-stone-900 to-stone-700 bg-clip-text text-transparent;
   }
 
   .section-fade {
@@ -64,41 +67,45 @@
   }
 
   .input-dark {
-    @apply bg-surface-1 border border-hairline rounded-md px-3 py-2.5 text-ink placeholder:text-ink-subtle 
-           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 
-           transition-all duration-200;
+    @apply bg-white border border-[#EADFD5] rounded-xl px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 
+           focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 
+           transition-all duration-200 shadow-sm;
   }
 
   .btn-primary {
-    @apply bg-primary text-white font-medium px-4 py-2.5 rounded-md 
-           hover:bg-primary-hover transition-all duration-200 
-           focus:outline-none focus:ring-2 focus:ring-primary/50
-           active:scale-[0.98];
+    @apply bg-[#059669] text-white font-semibold px-5 py-2.5 rounded-full 
+           hover:bg-[#047857] transition-all duration-200 shadow-sm shadow-emerald-600/20
+           focus:outline-none focus:ring-2 focus:ring-emerald-500/40
+           active:scale-[0.98] inline-flex items-center justify-center gap-2 text-sm;
   }
 
   .btn-secondary {
-    @apply bg-surface-1 text-ink font-medium px-4 py-2.5 rounded-md border border-hairline
-           hover:bg-surface-2 hover:border-hairline-strong transition-all duration-200 
-           focus:outline-none focus:ring-2 focus:ring-primary/50
-           active:scale-[0.98];
+    @apply bg-white text-stone-700 font-semibold px-4 py-2.5 rounded-full border border-[#EADFD5]
+           hover:bg-[#FAF6F1] hover:text-stone-900 hover:border-[#D8C9BC] transition-all duration-200 
+           focus:outline-none focus:ring-2 focus:ring-stone-400/20 shadow-sm
+           active:scale-[0.98] inline-flex items-center justify-center gap-2 text-sm;
   }
 
   .btn-ghost {
-    @apply text-ink-muted font-medium px-4 py-2.5 rounded-md
-           hover:bg-surface-1 hover:text-ink transition-all duration-200 
-           focus:outline-none focus:ring-2 focus:ring-primary/50;
+    @apply text-stone-600 font-medium px-3.5 py-2 rounded-xl
+           hover:bg-[#FAF6F1] hover:text-stone-900 transition-all duration-200 
+           focus:outline-none focus:ring-2 focus:ring-stone-400/20;
   }
 
   .tag-hot {
-    @apply bg-hot/15 text-hot border border-hot/25 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider;
+    @apply bg-red-50 text-red-600 border border-red-200/80 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap shrink-0 inline-flex items-center gap-1.5;
   }
 
   .tag-warm {
-    @apply bg-warm/15 text-warm border border-warm/25 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider;
+    @apply bg-amber-50 text-amber-700 border border-amber-200/80 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap shrink-0 inline-flex items-center gap-1.5;
   }
 
   .tag-cold {
-    @apply bg-cold/15 text-cold border border-cold/25 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider;
+    @apply bg-blue-50 text-blue-700 border border-blue-200/80 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap shrink-0 inline-flex items-center gap-1.5;
+  }
+
+  .section-label {
+    @apply text-xs font-mono font-semibold text-stone-500 uppercase tracking-wider;
   }
 }
 

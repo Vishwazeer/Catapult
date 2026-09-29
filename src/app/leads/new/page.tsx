@@ -8,7 +8,7 @@ export default function NewLeadPage() {
       <main className="flex-1 ml-[260px] p-8">
         <div className="max-w-3xl mx-auto">
           <div className="mb-8">
-            <h1 className="font-display text-3xl font-semibold text-ink tracking-wide">
+            <h1 className="text-3xl md:text-4xl font-black text-stone-900 tracking-tight">
               Add New Lead
             </h1>
             <p className="text-sm text-ink-muted mt-1">

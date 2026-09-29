@@ -192,12 +192,14 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
   };
 
   return (
-    <div className="glass-card flex flex-col h-[650px] w-full relative">
+    <div className="glass-card flex flex-col h-[650px] w-full relative p-0 overflow-hidden bg-white border border-[#EADFD5] rounded-3xl shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-surface-1/40">
-        <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-primary-hover" />
-          <h3 className="text-sm font-semibold text-ink">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#EADFD5] bg-[#FAF6F1]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+            <Bot className="w-4 h-4 text-emerald-700" />
+          </div>
+          <h3 className="text-sm font-extrabold text-stone-900 tracking-tight">
             Lead Assistant {leadName ? `— ${leadName}` : ""}
           </h3>
         </div>
@@ -206,37 +208,37 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowNotesModal(true)}
-            className="text-xs text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all px-2.5 py-1 rounded-lg bg-surface-2/80 border border-hairline hover:border-hairline-strong shadow-xs"
+            className="text-xs font-mono font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1.5 transition-all px-3 py-1 rounded-full bg-white border border-[#EADFD5] shadow-xs"
             title="Open Call Notes"
           >
-            <NotebookPen className="w-3.5 h-3.5 text-primary-hover" />
+            <NotebookPen className="w-3.5 h-3.5 text-emerald-600" />
             <span>Call Notes</span>
           </button>
 
           <button
             onClick={clearChat}
-            className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-all px-2.5 py-1 rounded-lg bg-surface-2/60 border border-hairline/40 hover:bg-hot/10 hover:border-hot/30"
+            className="text-xs font-mono text-stone-500 hover:text-terracotta flex items-center gap-1 transition-all px-3 py-1 rounded-full bg-white border border-[#EADFD5]/70 hover:bg-terracotta-light hover:border-terracotta/30"
             title="Clear chat history for this lead"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Clear History</span>
           </button>
 
-          <span className="text-xs text-ink-subtle hidden sm:inline ml-1">
+          <span className="text-xs font-mono text-stone-400 hidden sm:inline ml-1">
             Powered by Groq
           </span>
         </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Sparkles className="w-8 h-8 text-primary/40 mb-3" />
-            <p className="text-sm font-medium text-ink-muted mb-1">
+            <Sparkles className="w-8 h-8 text-emerald-600/50 mb-3" />
+            <p className="text-sm font-extrabold text-stone-900 mb-1">
               Ask questions about {leadName || "this lead"}
             </p>
-            <p className="text-xs text-ink-subtle">
+            <p className="text-xs text-stone-500">
               Get actionable advice grounded in lead context
             </p>
           </div>
@@ -255,27 +257,27 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
               )}
             >
               {msg.role === "assistant" && (
-                <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-3.5 h-3.5 text-primary-hover" />
+                <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="w-4 h-4 text-emerald-700" />
                 </div>
               )}
               <div
                 className={cn(
-                  "max-w-[88%] rounded-xl px-4 py-3 text-sm overflow-hidden shadow-sm",
+                  "max-w-[88%] rounded-2xl p-4 text-sm overflow-hidden shadow-xs",
                   msg.role === "user"
-                    ? "bg-primary text-white font-medium"
-                    : "bg-surface-2 text-ink-muted border border-hairline"
+                    ? "bg-[#059669] text-white font-medium"
+                    : "bg-[#FAF6F1] text-stone-900 border border-[#EADFD5]"
                 )}
               >
                 {msg.role === "user" ? (
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed font-sans">{msg.content}</p>
                 ) : (
                   <>
                     {msg.content ? (
                       <MarkdownRenderer content={msg.content} />
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-ink-subtle text-xs">
-                        <Loader2 className="w-3 h-3 animate-spin text-primary-hover" />
+                      <span className="inline-flex items-center gap-1.5 text-stone-500 text-xs font-mono">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
                         Thinking...
                       </span>
                     )}
@@ -283,8 +285,8 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
                 )}
               </div>
               {msg.role === "user" && (
-                <div className="w-7 h-7 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-3.5 h-3.5 text-ink-muted" />
+                <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0 mt-1">
+                  <User className="w-4 h-4 text-stone-700" />
                 </div>
               )}
             </motion.div>
@@ -294,13 +296,13 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
 
       {/* Quick Prompts */}
       {messages.length === 0 && (
-        <div className="px-5 pb-3">
+        <div className="px-6 pb-3">
           <div className="flex flex-wrap gap-2">
             {QUICK_CHAT_PROMPTS.map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => sendMessage(prompt)}
-                className="text-xs bg-surface-1 border border-hairline hover:border-hairline-strong text-ink-muted hover:text-ink rounded-full px-3 py-1.5 transition-all"
+                className="text-xs font-medium bg-white border border-[#EADFD5] hover:border-stone-400 text-stone-700 hover:text-stone-900 rounded-full px-3.5 py-1.5 transition-all shadow-xs"
               >
                 {prompt}
               </button>
@@ -310,8 +312,8 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-hairline bg-surface-1/40">
-        <div className="flex items-center gap-2 bg-surface-1 rounded-xl border border-hairline p-2 focus-within:border-primary/50 transition-colors shadow-inner">
+      <div className="p-4 border-t border-[#EADFD5] bg-[#FAF6F1]/50">
+        <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#EADFD5] p-2 focus-within:border-stone-400 transition-colors shadow-xs">
           <textarea
             ref={inputRef}
             rows={1}
@@ -319,12 +321,12 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask AI lead assistant..."
-            className="flex-1 bg-transparent border-0 px-3 py-1 text-sm text-ink placeholder:text-ink-subtle focus:outline-none resize-none"
+            className="flex-1 bg-transparent border-0 px-3 py-1.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none resize-none font-sans"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || isLoading}
-            className="btn-primary p-2.5 rounded-lg disabled:opacity-40 flex items-center justify-center"
+            className="btn-primary p-2.5 rounded-xl disabled:opacity-40 flex items-center justify-center"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

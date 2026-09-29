@@ -91,3 +91,12 @@ export const QUICK_CHAT_PROMPTS = [
   'Suggest a closing strategy',
   'How to handle price negotiation?',
 ] as const;
+
+export const LEAD_PHASES = [
+  { value: 'Incoming', label: 'Incoming', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'Engaged', label: 'Engaged', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { value: 'Meeting', label: 'Meeting', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { value: 'Proposal', label: 'Proposal', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'Converted', label: 'Converted', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { value: 'Closed', label: 'Closed', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+] as const;

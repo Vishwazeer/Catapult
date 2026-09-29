@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "@/components/sidebar";
-import LeadCard from "@/components/lead-card";
+import LeadCard, { TagBadge } from "@/components/lead-card";
 import {
   Flame,
   Sun,
@@ -17,13 +17,18 @@ import {
   Search,
   Sparkles,
   RefreshCw,
+  MapPin,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getScoreColor, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import LeadEditModal from '@/components/lead-edit-modal';
+import BulkNudgeSection from '@/components/bulk-nudge-section';
 
 interface Lead {
   id: number;
   name: string;
+  email?: string | null;
+  phone?: string | null;
   location: string;
   propertyType: string;
   budgetMin: number | null;
@@ -37,6 +42,7 @@ interface Analysis {
   score: number;
   tag: string;
   intent: string;
+  recommendedNextAction?: string;
 }
 
 interface LeadWithAnalysis {
@@ -61,33 +67,33 @@ function StatCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-card p-5 relative overflow-hidden"
+      transition={{ duration: 0.35, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="glass-card p-5 relative overflow-hidden bg-white border border-slate-200/90 shadow-sm"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-ink-subtle uppercase tracking-wider font-medium">
+          <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
             {label}
           </p>
-          <p className={cn("text-3xl font-mono font-bold mt-1", color)}>
+          <p className="text-3xl font-mono font-bold mt-1 text-slate-900">
             {value}
           </p>
           {subtitle && (
-            <p className="text-[11px] text-ink-muted mt-1">{subtitle}</p>
+            <p className="text-[11px] text-slate-500 mt-1">{subtitle}</p>
           )}
         </div>
         <div
           className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center",
-            color === "text-ink" && "bg-primary/10",
-            color === "text-hot" && "bg-hot/10",
-            color === "text-warm" && "bg-warm/10",
-            color === "text-cold" && "bg-cold/10"
+            "w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs",
+            color === "text-ink" && "bg-emerald-50 text-emerald-600 border-emerald-100",
+            color === "text-hot" && "bg-red-50 text-red-600 border-red-100",
+            color === "text-warm" && "bg-amber-50 text-amber-600 border-amber-100",
+            color === "text-cold" && "bg-blue-50 text-blue-600 border-blue-100"
           )}
         >
-          <Icon className={cn("w-5 h-5", color)} />
+          <Icon className="w-5 h-5" />
         </div>
       </div>
     </motion.div>
@@ -97,10 +103,11 @@ function StatCard({
 export default function DashboardPage() {
   const [leadsData, setLeadsData] = useState<LeadWithAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"board" | "list">("board");
+  const [viewMode, setViewMode] = useState<"board" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [scanningIds, setScanningIds] = useState<number[]>([]);
+  const [editingLead, setEditingLead] = useState<any | null>(null);
 
   const fetchLeads = async (showLoading = false) => {
     if (showLoading) setLoading(true);
@@ -156,6 +163,28 @@ export default function DashboardPage() {
     }
   };
 
+  const handleEditLead = (lead: any) => {
+    setEditingLead(lead);
+  };
+
+  const handleEditSuccess = (leadId: number) => {
+    setEditingLead(null);
+    fetchLeads(true); // Refresh to get updated data + new analysis
+  };
+
+  const handleRescanLead = async (leadId: number) => {
+    if (scanningIds.includes(leadId)) return;
+    setScanningIds(prev => [...prev, leadId]);
+    try {
+      await fetch(`/api/leads/${leadId}/analyze`, { method: 'POST' });
+      await fetchLeads(false);
+    } catch (err) {
+      console.error('Rescan failed:', err);
+    } finally {
+      setScanningIds(prev => prev.filter(id => id !== leadId));
+    }
+  };
+
   const hotLeads = leadsData.filter((l) => l.analysis?.tag === "hot");
   const warmLeads = leadsData.filter((l) => l.analysis?.tag === "warm");
   const coldLeads = leadsData.filter((l) => l.analysis?.tag === "cold");
@@ -184,22 +213,22 @@ export default function DashboardPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="font-display text-3xl font-semibold text-ink tracking-wide">
+            <h1 className="text-3xl md:text-4xl font-black text-stone-900 tracking-tight">
               Lead Dashboard
             </h1>
-            <p className="text-sm text-ink-muted mt-1">
+            <p className="text-sm text-stone-500 font-medium mt-1">
               Prioritize and act on your inbound leads
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => fetchLeads(true)}
-              className="p-2.5 rounded-lg border border-hairline hover:bg-surface-1 text-ink-muted hover:text-ink transition-all"
+              className="p-2.5 rounded-full border border-[#EADFD5] bg-white hover:bg-[#FAF6F1] text-stone-600 transition-all shadow-sm"
               title="Refresh leads"
             >
               <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             </button>
-            <Link href="/leads/new" className="btn-primary flex items-center gap-2">
+            <Link href="/leads/new" className="btn-primary">
               <Plus className="w-4 h-4" />
               New Lead
             </Link>
@@ -222,7 +251,7 @@ export default function DashboardPage() {
           />
           <StatCard
             icon={Flame}
-            label="Hot Leads"
+            label="High Intent"
             value={hotLeads.length}
             color="text-hot"
             delay={0.1}
@@ -230,7 +259,7 @@ export default function DashboardPage() {
           />
           <StatCard
             icon={Sun}
-            label="Warm Leads"
+            label="Moderate Intent"
             value={warmLeads.length}
             color="text-warm"
             delay={0.2}
@@ -238,7 +267,7 @@ export default function DashboardPage() {
           />
           <StatCard
             icon={Snowflake}
-            label="Cold Leads"
+            label="Low Intent"
             value={coldLeads.length}
             color="text-cold"
             delay={0.3}
@@ -276,6 +305,14 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
+        {/* Bulk Follow-up Nudge Center */}
+        {leadsData.length > 0 && (
+          <BulkNudgeSection
+            leads={leadsData}
+            onNudgeComplete={() => fetchLeads(false)}
+          />
+        )}
+
         {/* Toolbar */}
         <div className="flex items-center gap-3 mb-6">
           <div className="relative flex-1 max-w-sm">
@@ -291,9 +328,9 @@ export default function DashboardPage() {
           <div className="flex gap-1">
             {[
               { tag: null, label: "All" },
-              { tag: "hot", label: "Hot" },
-              { tag: "warm", label: "Warm" },
-              { tag: "cold", label: "Cold" },
+              { tag: "hot", label: "High Intent" },
+              { tag: "warm", label: "Moderate Intent" },
+              { tag: "cold", label: "Low Intent" },
               ...(pendingLeads.length > 0
                 ? [{ tag: "pending", label: `Pending (${pendingLeads.length})` }]
                 : []),
@@ -312,30 +349,30 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center border border-hairline rounded-lg overflow-hidden bg-surface-1">
-            <button
-              onClick={() => setViewMode("board")}
-              className={cn(
-                "p-2 transition-all",
-                viewMode === "board"
-                  ? "bg-surface-2 text-ink"
-                  : "text-ink-subtle hover:bg-surface-1"
-              )}
-              title="Board View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
+          <div className="ml-auto flex items-center gap-1.5 p-1 bg-white border border-[#EADFD5] rounded-full shadow-sm">
             <button
               onClick={() => setViewMode("list")}
               className={cn(
-                "p-2 transition-all",
+                "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black tracking-tight transition-all",
                 viewMode === "list"
-                  ? "bg-surface-2 text-ink"
-                  : "text-ink-subtle hover:bg-surface-1"
+                  ? "bg-[#059669] text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-[#FAF6F1]"
               )}
-              title="List View"
             >
               <List className="w-4 h-4" />
+              <span>List View</span>
+            </button>
+            <button
+              onClick={() => setViewMode("board")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black tracking-tight transition-all",
+                viewMode === "board"
+                  ? "bg-[#059669] text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-[#FAF6F1]"
+              )}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>Card View</span>
             </button>
           </div>
         </div>
@@ -388,6 +425,8 @@ export default function DashboardPage() {
                   analysis={null}
                   index={i}
                   onScan={handleScanLead}
+                  onEdit={handleEditLead}
+                  onRescan={handleRescanLead}
                   isScanning={scanningIds.includes(item.lead.id)}
                 />
               ))}
@@ -401,21 +440,21 @@ export default function DashboardPage() {
             {[
               {
                 tag: "hot",
-                label: "Hot Leads",
+                label: "High Intent Leads",
                 icon: Flame,
                 color: "text-hot",
                 leads: hotLeads,
               },
               {
                 tag: "warm",
-                label: "Warm Leads",
+                label: "Moderate Intent Leads",
                 icon: Sun,
                 color: "text-warm",
                 leads: warmLeads,
               },
               {
                 tag: "cold",
-                label: "Cold Leads",
+                label: "Low Intent Leads",
                 icon: Snowflake,
                 color: "text-cold",
                 leads: coldLeads,
@@ -451,6 +490,8 @@ export default function DashboardPage() {
                         analysis={item.analysis}
                         index={i}
                         onScan={handleScanLead}
+                        onEdit={handleEditLead}
+                        onRescan={handleRescanLead}
                         isScanning={scanningIds.includes(item.lead.id)}
                       />
                     ))}
@@ -467,20 +508,126 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* List View */}
+        {/* Table View (Image 3 Mode) */}
         {!loading && leadsData.length > 0 && viewMode === "list" && (
-          <div className="space-y-3">
-            {filteredLeads.map((item, i) => (
-              <LeadCard
-                key={item.lead.id}
-                lead={item.lead}
-                analysis={item.analysis}
-                index={i}
-                onScan={handleScanLead}
-                isScanning={scanningIds.includes(item.lead.id)}
-              />
-            ))}
+          <div className="bg-white rounded-3xl border border-[#EADFD5] shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#FAF6F1] border-b border-[#EADFD5] section-label">
+                    <th className="py-4 px-5 text-center">PRIORITY / SCORE</th>
+                    <th className="py-4 px-5">CUSTOMER</th>
+                    <th className="py-4 px-5">BUDGET · TIMELINE</th>
+                    <th className="py-4 px-5">AI SUMMARY</th>
+                    <th className="py-4 px-5">RECOMMENDED NEXT ACTION</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EADFD5]/70 text-xs text-stone-800 font-sans">
+                  {filteredLeads.map(({ lead, analysis }, i) => (
+                    <motion.tr
+                      key={lead.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.02 }}
+                      className="hover:bg-[#FAF6F1]/50 transition-colors group cursor-pointer"
+                      onClick={() => window.location.href = `/leads/${lead.id}`}
+                    >
+                      {/* Priority / Score */}
+                      <td className="py-5 px-5 align-top text-center">
+                        <div className="flex flex-col items-center justify-center gap-1.5 mx-auto">
+                          {analysis ? (
+                            <>
+                              <TagBadge tag={analysis.tag} />
+                              <span
+                                className={cn(
+                                  "font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200",
+                                  getScoreColor(analysis.score)
+                                )}
+                              >
+                                {analysis.score} / 100
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-mono text-[10px] text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                              Pending Scan
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Customer */}
+                      <td className="py-5 px-5 align-top">
+                        <div>
+                          <span className="font-black text-stone-900 text-sm tracking-tight block">
+                            {lead.name}
+                          </span>
+                          <div className="text-stone-500 text-xs space-y-0.5 mt-1 font-medium">
+                            <div className="flex items-center gap-1 text-stone-600">
+                              <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                              {lead.location}
+                            </div>
+                            {lead.phone && <div className="font-mono text-[11px]">📞 {lead.phone}</div>}
+                            {lead.email && <div className="font-mono text-[11px] truncate max-w-[160px]">✉️ {lead.email}</div>}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Budget · Timeline */}
+                      <td className="py-5 px-5 align-top font-mono">
+                        <div className="space-y-1">
+                          <div className="font-extrabold text-stone-900 text-xs">
+                            {lead.budgetMin ? formatCurrency(lead.budgetMin) : "N/A"}
+                            {lead.budgetMin && lead.budgetMax ? " – " : ""}
+                            {lead.budgetMax ? formatCurrency(lead.budgetMax) : ""}
+                          </div>
+                          <div className="text-stone-500 text-xs font-sans font-medium">
+                            {lead.buyingTimeline}
+                          </div>
+                          <div className="text-xs text-stone-400 font-sans capitalize">
+                            {lead.propertyType}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* AI Summary */}
+                      <td className="py-5 px-5 align-top max-w-xs">
+                        <p className="text-stone-700 line-clamp-3 text-xs leading-relaxed font-normal">
+                          {analysis ? analysis.summary : "No AI analysis generated yet."}
+                        </p>
+                      </td>
+
+                      {/* Recommended Next Action */}
+                      <td className="py-5 px-5 align-top max-w-xs">
+                        <div className="space-y-2.5">
+                          <p className="text-xs font-semibold text-stone-900 line-clamp-2 leading-relaxed">
+                            {analysis ? analysis.recommendedNextAction : "Run AI scan to extract next action"}
+                          </p>
+                          <div className="flex items-center gap-2 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                            <Link
+                              href={`/leads/${lead.id}`}
+                              className="btn-primary text-xs px-3.5 py-1.5"
+                            >
+                              View Lead →
+                            </Link>
+                          </div>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+        )}
+
+        {editingLead && (
+          <LeadEditModal
+            isOpen={!!editingLead}
+            onClose={() => setEditingLead(null)}
+            onSuccess={handleEditSuccess}
+            leadId={editingLead.id}
+            leadData={editingLead}
+          />
         )}
       </main>
     </>

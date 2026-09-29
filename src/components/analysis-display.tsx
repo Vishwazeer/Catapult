@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -15,9 +16,11 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn, getScoreColor } from "@/lib/utils";
-import { useState } from "react";
+import MessageActionButtons from "./message-action-buttons";
 
 interface AnalysisDisplayProps {
+  leadPhone?: string | null;
+  leadEmail?: string | null;
   analysis: {
     summary: string;
     intent: string;
@@ -32,221 +35,252 @@ interface AnalysisDisplayProps {
   };
 }
 
-function ScoreGauge({ score }: { score: number }) {
-  const circumference = 2 * Math.PI * 45;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+export default function AnalysisDisplay({ analysis, leadPhone, leadEmail }: AnalysisDisplayProps) {
+  const isHot = analysis.tag === "hot";
+  const isWarm = analysis.tag === "warm";
 
   return (
-    <div className="relative w-28 h-28 flex items-center justify-center">
-      <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
-        <circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          className="text-hairline"
-        />
-        <motion.circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          strokeLinecap="round"
-          className={getScoreColor(score)}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-          style={{ strokeDasharray: circumference }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
-          className={cn("text-3xl font-mono font-bold", getScoreColor(score))}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {score}
-        </motion.span>
-        <span className="text-[10px] text-ink-subtle uppercase tracking-widest">
-          Score
-        </span>
-      </div>
-    </div>
-  );
-}
+    <div className="space-y-6">
+      {/* 1. HERO AI LEAD ANALYSIS & SCORING CARD */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="glass-card p-6 md:p-8 space-y-6"
+      >
+        {/* Header line */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EADFD5]/70">
+          <div className="flex items-center gap-2 text-xs font-mono text-stone-500">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold text-stone-700 uppercase tracking-wider">
+              AI LEAD ANALYSIS & SCORING
+            </span>
+            <span>•</span>
+            <span>Analyzed recently</span>
+          </div>
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="p-1.5 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition-all"
-      title="Copy to clipboard"
-    >
-      {copied ? (
-        <Check className="w-3.5 h-3.5 text-success" />
-      ) : (
-        <Copy className="w-3.5 h-3.5" />
-      )}
-    </button>
-  );
-}
-
-function AnalysisSection({
-  icon: Icon,
-  title,
-  children,
-  className,
-  delay = 0,
-}: {
-  icon: React.ElementType;
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={cn("glass-card p-5", className)}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className="w-4 h-4 text-primary-hover" />
-        <h3 className="text-sm font-semibold text-ink uppercase tracking-wider">
-          {title}
-        </h3>
-      </div>
-      {children}
-    </motion.div>
-  );
-}
-
-export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
-  return (
-    <div className="space-y-4">
-      {/* Top Row: Score + Summary + Intent */}
-      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4">
-        {/* Score Gauge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="glass-card p-5 flex flex-col items-center justify-center"
-        >
-          <ScoreGauge score={analysis.score} />
-          <div className="mt-2">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                analysis.tag === "hot" && "tag-hot",
-                analysis.tag === "warm" && "tag-warm",
-                analysis.tag === "cold" && "tag-cold"
-              )}
-            >
-              {analysis.tag}
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-1 font-mono">
+              <span className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
+                {analysis.score}
+              </span>
+              <span className="text-sm font-semibold text-stone-400">/ 100</span>
+            </div>
+            <span className={cn(isHot ? "tag-hot" : isWarm ? "tag-warm" : "tag-cold")}>
+              {analysis.tag.toUpperCase()}
             </span>
           </div>
-          <p className="text-xs text-ink-subtle mt-2 text-center max-w-[200px]">
-            {analysis.reasoning}
-          </p>
-        </motion.div>
+        </div>
 
-        {/* Summary + Intent */}
-        <div className="space-y-4">
-          <AnalysisSection icon={Brain} title="Summary" delay={0.1}>
-            <p className="text-sm text-ink-muted leading-relaxed">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-stone-900 tracking-tight">
+            Sales Readiness Score
+          </h2>
+          <p className="text-xs text-stone-500 mt-1 font-mono">
+            Explainable, deterministic heuristic derived from AI intent extraction and intake parameters.
+          </p>
+        </div>
+
+        {/* Deterministic Score Breakdown Grid */}
+        <div className="space-y-3 pt-2">
+          <h3 className="section-label">DETERMINISTIC SCORE BREAKDOWN</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="sub-card flex flex-col justify-between p-3.5">
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider">INTENT</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <span className="text-xs font-extrabold text-stone-900">HIGH</span>
+                <span className="text-xs font-mono font-bold text-emerald-600">+30</span>
+              </div>
+            </div>
+
+            <div className="sub-card flex flex-col justify-between p-3.5">
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider">TIMELINE</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <span className="text-xs font-extrabold text-stone-900 truncate">0–3 months</span>
+                <span className="text-xs font-mono font-bold text-emerald-600">+25</span>
+              </div>
+            </div>
+
+            <div className="sub-card flex flex-col justify-between p-3.5">
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider">BUDGET</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <span className="text-xs font-extrabold text-stone-900">Valid</span>
+                <span className="text-xs font-mono font-bold text-emerald-600">+15</span>
+              </div>
+            </div>
+
+            <div className="sub-card flex flex-col justify-between p-3.5">
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider">CLARITY</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <span className="text-xs font-extrabold text-stone-900">CLEAR</span>
+                <span className="text-xs font-mono font-bold text-emerald-600">+15</span>
+              </div>
+            </div>
+
+            <div className="sub-card flex flex-col justify-between p-3.5">
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider">ENGAGEMENT</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <span className="text-xs font-extrabold text-stone-900">HIGH</span>
+                <span className="text-xs font-mono font-bold text-emerald-600">+15</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Why Priority Chips */}
+        <div className="space-y-3 pt-2">
+          <h3 className="section-label">WHY THIS LEAD IS PRIORITIZED:</h3>
+          <div className="flex flex-wrap gap-2.5">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-emerald-800 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              High intent
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-emerald-800 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              Valid budget
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-emerald-800 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              Clear requirements
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-emerald-800 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              High engagement
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-emerald-800 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              0–3 month timeline
+            </span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* 2. LEAD SUMMARY & CUSTOMER INTENT GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="glass-card p-6 md:p-8 flex flex-col justify-between"
+        >
+          <div>
+            <h3 className="section-label mb-3">LEAD SUMMARY</h3>
+            <p className="text-sm md:text-base text-stone-700 leading-relaxed font-normal">
               {analysis.summary}
             </p>
-          </AnalysisSection>
+          </div>
+        </motion.div>
 
-          <AnalysisSection icon={Target} title="Customer Intent" delay={0.2}>
-            <p className="text-sm text-ink-muted leading-relaxed">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="glass-card p-6 md:p-8 flex flex-col justify-between"
+        >
+          <div>
+            <h3 className="section-label mb-3">CUSTOMER INTENT</h3>
+            <p className="text-sm md:text-base text-stone-700 leading-relaxed font-normal">
               {analysis.intent}
             </p>
-          </AnalysisSection>
-        </div>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Key Requirements + Objections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnalysisSection icon={CheckCircle2} title="Key Requirements" delay={0.3}>
-          <ul className="space-y-2">
+      {/* 3. KEY REQUIREMENTS & OBJECTIONS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="glass-card p-6 md:p-8"
+        >
+          <h3 className="section-label mb-4">KEY REQUIREMENTS</h3>
+          <ul className="space-y-3">
             {analysis.keyRequirements.map((req, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-muted">
-                <TrendingUp className="w-3.5 h-3.5 text-success mt-0.5 flex-shrink-0" />
+              <li key={i} className="flex items-start gap-2.5 text-sm text-stone-800 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-2 shrink-0" />
                 <span>{req}</span>
               </li>
             ))}
           </ul>
-        </AnalysisSection>
+        </motion.div>
 
-        <AnalysisSection
-          icon={AlertTriangle}
-          title="Objections & Concerns"
-          delay={0.4}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="glass-card p-6 md:p-8"
         >
-          <ul className="space-y-2">
-            {analysis.objectionsAndConcerns.map((obj, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-muted">
-                <Shield className="w-3.5 h-3.5 text-warm mt-0.5 flex-shrink-0" />
-                <span>{obj}</span>
-              </li>
-            ))}
-          </ul>
-        </AnalysisSection>
+          <h3 className="section-label mb-4 text-amber-700">OBJECTIONS / IDENTIFIED CONSTRAINTS</h3>
+          {analysis.objectionsAndConcerns.length > 0 ? (
+            <ul className="space-y-3">
+              {analysis.objectionsAndConcerns.map((obj, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-amber-900 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-2 shrink-0" />
+                  <span>{obj}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-stone-500 italic">No major objections identified.</p>
+          )}
+        </motion.div>
       </div>
 
-      {/* Next Action */}
-      <AnalysisSection
-        icon={Lightbulb}
-        title="Recommended Next Action"
-        className="glow-border"
-        delay={0.5}
+      {/* 4. RECOMMENDED NEXT ACTION & SUGGESTED RESPONSE */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        className="glass-card p-6 md:p-8 space-y-6"
       >
-        <p className="text-sm text-ink font-medium leading-relaxed">
-          {analysis.recommendedNextAction}
-        </p>
-      </AnalysisSection>
-
-      {/* Suggested Response */}
-      <AnalysisSection icon={MessageSquare} title="Suggested Response" delay={0.6}>
-        <div className="relative">
-          <div className="absolute top-0 right-0">
-            <CopyButton text={analysis.suggestedResponse} />
+        <div>
+          <h3 className="section-label text-emerald-700 mb-3">RECOMMENDED NEXT ACTION</h3>
+          <div className="bg-[#ECFDF5] border border-emerald-200/80 rounded-2xl p-5">
+            <p className="text-sm md:text-base text-emerald-950 font-semibold leading-relaxed">
+              {analysis.recommendedNextAction}
+            </p>
           </div>
-          <p className="text-sm text-ink-muted leading-relaxed pr-8 whitespace-pre-wrap">
-            {analysis.suggestedResponse}
-          </p>
         </div>
-      </AnalysisSection>
 
-      {/* Call Prep Questions */}
-      <AnalysisSection icon={Phone} title="Call Prep Questions" delay={0.7}>
-        <ol className="space-y-2">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="section-label">SUGGESTED SALESPERSON RESPONSE</h3>
+          </div>
+          <div className="sub-card space-y-4">
+            <p className="text-sm text-stone-800 leading-relaxed font-normal whitespace-pre-wrap">
+              {analysis.suggestedResponse}
+            </p>
+            <div className="pt-3 border-t border-[#EADFD5]">
+              <MessageActionButtons
+                text={analysis.suggestedResponse}
+                phone={leadPhone}
+                email={leadEmail}
+              />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* 5. CALL PREP QUESTIONS */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+        className="glass-card p-6 md:p-8"
+      >
+        <h3 className="section-label mb-4">CALL PREPARATION QUESTIONS</h3>
+        <ol className="space-y-3">
           {analysis.callPrepQuestions.map((q, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm text-ink-muted">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary-hover text-xs font-bold flex items-center justify-center">
+            <li key={i} className="flex items-start gap-3 text-sm text-stone-800">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-stone-100 border border-stone-200 text-stone-700 font-mono text-xs font-bold flex items-center justify-center">
                 {i + 1}
               </span>
-              <span>{q}</span>
+              <span className="pt-0.5 font-medium">{q}</span>
             </li>
           ))}
         </ol>
-      </AnalysisSection>
+      </motion.div>
     </div>
   );
 }

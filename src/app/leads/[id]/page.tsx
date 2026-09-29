@@ -6,7 +6,9 @@ import { motion } from "framer-motion";
 import Sidebar from "@/components/sidebar";
 import AnalysisDisplay from "@/components/analysis-display";
 import LeadChat from "@/components/lead-chat";
-import CallPrep from "@/components/call-prep";
+import CustomerSimulator from "@/components/customer-simulator";
+import PropertyMatches from "@/components/property-matches";
+import LeadEditModal from "@/components/lead-edit-modal";
 import {
   Loader2,
   ArrowLeft,
@@ -26,10 +28,14 @@ import {
   Snowflake,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  RefreshCw,
+  MessageCircle,
 } from "lucide-react";
 import { cn, formatCurrency, formatDate, getScoreColor } from "@/lib/utils";
 import Link from "next/link";
 import { TagBadge } from "@/components/lead-card";
+import PhaseSelector from "@/components/phase-selector";
 
 interface LeadData {
   id: number;
@@ -93,6 +99,8 @@ export default function LeadDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>("analysis");
   const [deleting, setDeleting] = useState(false);
   const [showMessageDetails, setShowMessageDetails] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isRescanning, setIsRescanning] = useState(false);
 
   useEffect(() => {
     fetchLead();
@@ -126,6 +134,24 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleRescan = async () => {
+    if (isRescanning) return;
+    setIsRescanning(true);
+    try {
+      await fetch(`/api/leads/${leadId}/analyze`, { method: "POST" });
+      await fetchLead();
+    } catch (err) {
+      console.error("Rescan failed:", err);
+    } finally {
+      setIsRescanning(false);
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false);
+    fetchLead();
+  };
+
   if (loading) {
     return (
       <>
@@ -154,152 +180,125 @@ export default function LeadDetailPage() {
   return (
     <>
       <Sidebar />
-      <main className="flex-1 ml-[260px] p-8 max-w-7xl mx-auto">
+      <main className="flex-1 ml-[260px] p-6 md:p-10 max-w-7xl mx-auto space-y-6">
         {/* Top Header & Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-stone-600">
             <Link
               href="/"
-              className="p-2 rounded-lg border border-hairline bg-surface-1 text-ink-subtle hover:text-ink hover:bg-surface-2 transition-all"
+              className="flex items-center gap-1 hover:text-stone-900 transition-colors font-medium"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
             </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-display text-3xl font-semibold text-ink tracking-wide">
-                  {lead.name}
-                </h1>
-                {analysis && <TagBadge tag={analysis.tag} />}
-              </div>
-              <div className="flex items-center gap-4 text-xs text-ink-subtle mt-1">
-                <span className="flex items-center gap-1 font-medium text-ink-muted">
-                  <MapPin className="w-3.5 h-3.5 text-primary-hover" />
-                  {lead.location}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5" />
-                  {lead.propertyType} {lead.bhkConfig ? `(${lead.bhkConfig})` : ""}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {formatDate(lead.createdAt)}
-                </span>
-              </div>
-            </div>
+            <span className="text-stone-300">/</span>
+            <span className="font-extrabold text-stone-900">{lead.name}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {analysis && (
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-1 border border-hairline shadow-sm">
-                <span className="text-xs text-ink-subtle uppercase tracking-wider font-semibold">
-                  AI Score
-                </span>
-                <span className={cn("font-mono text-2xl font-bold", getScoreColor(analysis.score))}>
-                  {analysis.score}
-                </span>
-              </div>
-            )}
-
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="p-2.5 rounded-xl border border-hairline text-ink-subtle hover:text-hot hover:bg-hot/10 hover:border-hot/30 transition-all"
-              title="Delete Lead"
-            >
-              {deleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </button>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-mono text-stone-500 hidden sm:inline">
+              Lead Record <span className="text-stone-700 font-semibold">#lead_{lead.id}</span>
+            </span>
+            <PhaseSelector
+              leadId={leadId}
+              currentPhase={(lead as any).phase || "Incoming"}
+              onPhaseChange={(newPhase) => {
+                setLead((prev) => prev ? { ...prev, phase: newPhase } as any : null);
+              }}
+              size="md"
+            />
+            <Link href="/" className="btn-primary">
+              + Add Lead
+            </Link>
           </div>
         </motion.div>
 
-        {/* Compact Quick Metadata Bar */}
+        {/* HERO LEAD SUMMARY CARD (IMAGE 1 PARITY) */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="glass-card p-4 mb-6"
+          className="glass-card p-6 md:p-8 space-y-6"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
-            {lead.phone && (
-              <div>
-                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Phone</span>
-                <span className="text-ink font-mono mt-0.5 flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-ink-subtle" />
-                  {lead.phone}
+          {/* Top metadata tags line */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 flex-wrap font-mono">
+              <span className="bg-stone-100 text-stone-700 px-3 py-1 rounded-full border border-stone-200">
+                ID: lead_{lead.id}
+              </span>
+              {analysis && (
+                <span className="bg-[#ECFDF5] text-emerald-700 px-3 py-1 rounded-full border border-emerald-200/80 font-bold">
+                  AI Analyzed ({analysis.score}/100 • {analysis.tag.toUpperCase()})
                 </span>
-              </div>
-            )}
-            {lead.email && (
-              <div>
-                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Email</span>
-                <span className="text-ink truncate mt-0.5 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-ink-subtle" />
-                  {lead.email}
-                </span>
-              </div>
-            )}
-            <div>
-              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Budget</span>
-              <span className="text-primary-hover font-mono font-bold mt-0.5 flex items-center gap-0.5">
-                <IndianRupee className="w-3 h-3" />
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 font-mono text-stone-400 text-xs">
+              <span>Created: {formatDate(lead.createdAt)}</span>
+              <span>•</span>
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="hover:text-stone-800 transition-colors inline-flex items-center gap-1 text-stone-600 font-sans font-semibold"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Edit Lead
+              </button>
+            </div>
+          </div>
+
+          {/* Lead Title & Location */}
+          <div>
+            <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
+              {lead.name}
+            </h1>
+            <p className="text-stone-500 mt-1 flex items-center gap-1.5 font-medium text-sm md:text-base">
+              <MapPin className="w-4 h-4 text-stone-400" />
+              {lead.location}
+            </p>
+          </div>
+
+          {/* 3-Column Key Intake Metrics Sub-cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="sub-card space-y-2 p-5">
+              <span className="section-label">TARGET BUDGET</span>
+              <div className="text-xl md:text-2xl font-black text-stone-900 tracking-tight font-mono">
                 {lead.budgetMin ? formatCurrency(lead.budgetMin) : "N/A"}
                 {lead.budgetMin && lead.budgetMax ? " – " : ""}
                 {lead.budgetMax ? formatCurrency(lead.budgetMax) : ""}
-              </span>
-            </div>
-            <div>
-              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Timeline</span>
-              <span className="text-ink font-medium mt-0.5 block">{lead.buyingTimeline}</span>
-            </div>
-            <div>
-              <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Financing</span>
-              <span className="text-ink font-medium mt-0.5 block capitalize">
-                {lead.loanReady ? `Loan (${lead.loanReady})` : "Not specified"}
-              </span>
-            </div>
-            {lead.source && (
-              <div>
-                <span className="text-[11px] text-ink-subtle block font-medium uppercase tracking-wider">Source</span>
-                <span className="text-ink font-medium mt-0.5 block capitalize">
-                  {lead.source}
-                </span>
               </div>
-            )}
+              <p className="text-xs text-stone-400 font-mono">
+                Raw: ₹{lead.budgetMin ? (lead.budgetMin * 100000).toLocaleString('en-IN') : 'N/A'}
+              </p>
+            </div>
+
+            <div className="sub-card space-y-2 p-5">
+              <span className="section-label">BUYING TIMELINE</span>
+              <div className="text-xl md:text-2xl font-black text-stone-900 tracking-tight">
+                {lead.buyingTimeline}
+              </div>
+              <p className="text-xs text-stone-400 font-mono">
+                Key: {lead.buyingTimeline.toLowerCase()}
+              </p>
+            </div>
+
+            <div className="sub-card space-y-2 p-5">
+              <span className="section-label">PROPERTY REQUIREMENT</span>
+              <div className="text-base md:text-lg font-extrabold text-stone-900 leading-snug">
+                {lead.propertyRequirement || `${lead.propertyType} ${lead.bhkConfig ? `(${lead.bhkConfig})` : ''}`}
+              </div>
+            </div>
           </div>
 
-          {/* Expandable Customer Message */}
+          {/* Inbound Customer Message / Conversation Notes */}
           {lead.customerMessage && (
-            <div className="mt-3 pt-3 border-t border-hairline/60">
-              <button
-                onClick={() => setShowMessageDetails(!showMessageDetails)}
-                className="flex items-center justify-between w-full text-xs text-ink-subtle hover:text-ink transition-colors"
-              >
-                <span className="font-medium text-ink-muted flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-primary-hover" />
-                  Customer Message: &quot;{lead.customerMessage.slice(0, 75)}{lead.customerMessage.length > 75 ? "..." : ""}&quot;
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-primary-hover font-medium">
-                  {showMessageDetails ? "Hide full message" : "View full message"}
-                  {showMessageDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </span>
-              </button>
-
-              {showMessageDetails && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="mt-2.5 text-xs text-ink-muted leading-relaxed bg-surface-2/60 p-3 rounded-lg border border-hairline/40 italic"
-                >
-                  &quot;{lead.customerMessage}&quot;
-                </motion.p>
-              )}
+            <div className="space-y-3 pt-2">
+              <h3 className="section-label">INBOUND CUSTOMER MESSAGE / CONVERSATION NOTES</h3>
+              <div className="sub-card p-5 text-stone-800 text-sm md:text-base leading-relaxed font-normal">
+                &quot;{lead.customerMessage}&quot;
+              </div>
             </div>
           )}
         </motion.div>
@@ -425,7 +424,7 @@ export default function LeadDetailPage() {
               </div>
             </button>
 
-            {/* Tab 3: Call Prep */}
+            {/* Tab 3: Customer Simulator */}
             <button
               onClick={() => setActiveTab("callprep")}
               className={cn(
@@ -445,14 +444,14 @@ export default function LeadDetailPage() {
                         : "bg-surface-2 text-primary-hover group-hover:bg-primary/20"
                     )}
                   >
-                    <Sparkles className="w-5 h-5" />
+                    <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm text-ink group-hover:text-primary-hover transition-colors">
-                      AI Call Prep
+                      WhatsApp Chat Simulator
                     </h3>
                     <p className="text-[11px] text-ink-subtle">
-                      Live property database search
+                      WhatsApp follow-up simulator
                     </p>
                   </div>
                 </div>
@@ -461,14 +460,14 @@ export default function LeadDetailPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline/40 text-[11px]">
-                <span className="text-ink-subtle">Split-panel Inventory</span>
+                <span className="text-ink-subtle">WhatsApp Sim</span>
                 <span
                   className={cn(
                     "font-semibold uppercase tracking-wider",
                     activeTab === "callprep" ? "text-primary-hover" : "text-ink-subtle"
                   )}
                 >
-                  {activeTab === "callprep" ? "Active View →" : "Click to prep"}
+                  {activeTab === "callprep" ? "Active View →" : "Click to simulate"}
                 </span>
               </div>
             </button>
@@ -481,9 +480,14 @@ export default function LeadDetailPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          className="mb-8"
         >
           {activeTab === "analysis" && analysis && (
-            <AnalysisDisplay analysis={analysis} />
+            <AnalysisDisplay
+              analysis={analysis}
+              leadPhone={lead.phone}
+              leadEmail={lead.email}
+            />
           )}
 
           {activeTab === "chat" && (
@@ -491,9 +495,11 @@ export default function LeadDetailPage() {
           )}
 
           {activeTab === "callprep" && analysis && (
-            <CallPrep
+            <CustomerSimulator
               leadId={leadId}
               leadName={lead.name}
+              leadPhone={lead.phone}
+              leadEmail={lead.email}
               leadLocation={lead.location}
               leadPropertyType={lead.propertyType}
               leadBhk={lead.bhkConfig || undefined}
@@ -502,6 +508,29 @@ export default function LeadDetailPage() {
             />
           )}
         </motion.div>
+
+        {/* Relevant Property Matches Section */}
+        <div className="mt-8">
+          <PropertyMatches
+            leadName={lead.name}
+            leadPhone={lead.phone}
+            leadLocation={lead.location}
+            leadPropertyType={lead.propertyType}
+            leadBhk={lead.bhkConfig || undefined}
+            leadBudgetMax={lead.budgetMax || undefined}
+          />
+        </div>
+
+        {/* Lead Edit Modal */}
+        {showEditModal && (
+          <LeadEditModal
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            onSuccess={handleEditSuccess}
+            leadId={leadId}
+            leadData={lead}
+          />
+        )}
       </main>
     </>
   );

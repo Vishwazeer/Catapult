@@ -14,3 +14,23 @@ export const leadAnalysisSchema = z.object({
 });
 
 export type LeadAnalysis = z.infer<typeof leadAnalysisSchema>;
+
+export const simulationReanalysisSchema = z.object({
+  intent: z.enum(['high', 'medium', 'low']).describe('Updated purchase intent level'),
+  urgency: z.enum(['high', 'medium', 'low']).describe('Updated urgency level'),
+  temperature: z.enum(['hot', 'warm', 'cold']).describe('Updated lead temperature'),
+  priorityScore: z.number().min(0).max(100).describe('Updated priority score 0-100'),
+  direction: z.enum(['increased', 'unchanged', 'decreased']).describe('Whether qualification changed'),
+  scoreChange: z.number().describe('Numeric change in score (positive or negative)'),
+  newRequirements: z.array(z.string()).describe('Requirements discovered in conversation'),
+  newObjections: z.array(z.string()).describe('New objections or concerns raised'),
+  buyingSignals: z.array(z.string()).describe('Positive buying signals detected'),
+  informationDiscovered: z.array(z.string()).describe('New information revealed by customer'),
+  missingInformation: z.array(z.string()).describe('Information still unknown'),
+  recommendedNextAction: z.string().describe('What the salesperson should do next'),
+  suggestedResponse: z.string().describe('Recommended draft response message for salesperson to send next'),
+  matchedPropertyId: z.number().nullable().optional().describe('The ID of the best matching property chosen from the AVAILABLE PROPERTY INVENTORY list'),
+  reasoning: z.string().describe('Brief explanation of why score/tag changed'),
+});
+
+export type SimulationReanalysis = z.infer<typeof simulationReanalysisSchema>;

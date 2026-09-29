@@ -1,16 +1,16 @@
 "use client";
 
 import LeadSelectorLayout from "@/components/lead-selector-layout";
-import { Sparkles } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Suspense } from "react";
 
 function CallPrepPageContent() {
   return (
     <LeadSelectorLayout
       feature="callprep"
-      title="AI Call Prep & Inventory Matcher"
-      subtitle="Real-time property database recommendations and pre-call qualification checklist"
-      icon={Sparkles}
+      title="WhatsApp Chat Simulator & Follow-up Evaluator"
+      subtitle="Interactive WhatsApp-style simulator powered by Grok roleplay and separate lead re-evaluator"
+      icon={MessageCircle}
     />
   );
 }

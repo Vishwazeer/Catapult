@@ -36,10 +36,49 @@ export async function GET(req: NextRequest) {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
     const results = await db.select().from(properties).where(whereClause);
-    
     return NextResponse.json({ properties: results });
   } catch (error) {
     console.error('Error fetching properties:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { name, location, city, state, type, bhk, sqft, priceInr, amenities, builder, possessionStatus, description } = body;
+    
+    if (!name || !location || !city || !type || !sqft || priceInr === undefined || !builder) {
+      return NextResponse.json({ error: 'Missing required property fields' }, { status: 400 });
+    }
+
+    const amenitiesList = Array.isArray(amenities)
+      ? amenities
+      : typeof amenities === 'string'
+      ? amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : [];
+
+    const [inserted] = await db
+      .insert(properties)
+      .values({
+        name,
+        location,
+        city,
+        state: state || 'India',
+        type,
+        bhk: bhk || null,
+        sqft: parseInt(sqft),
+        priceInr: parseFloat(priceInr), // Stored in Lakhs (e.g. 150 = 1.5 Cr)
+        amenities: amenitiesList,
+        builder,
+        possessionStatus: possessionStatus || 'ready',
+        description: description || null,
+      })
+      .returning();
+
+    return NextResponse.json({ property: inserted });
+  } catch (error: any) {
+    console.error('Error creating property:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to create property' }, { status: 500 });
   }
 }

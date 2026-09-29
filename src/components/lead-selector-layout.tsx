@@ -8,12 +8,14 @@ import { cn, formatCurrency, getScoreColor } from "@/lib/utils";
 import { TagBadge } from "./lead-card";
 import AnalysisDisplay from "./analysis-display";
 import LeadChat from "./lead-chat";
-import CallPrep from "./call-prep";
+import CustomerSimulator from "./customer-simulator";
 
 interface LeadWithAnalysis {
   lead: {
     id: number;
     name: string;
+    phone?: string | null;
+    email?: string | null;
     location: string;
     propertyType: string;
     bhkConfig: string | null;
@@ -96,40 +98,40 @@ export default function LeadSelectorLayout({
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20">
-              <FeatureIcon className="w-5 h-5 text-primary-hover" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-sm">
+              <FeatureIcon className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-semibold text-ink tracking-wide">
+              <h1 className="text-2xl md:text-3xl font-black text-stone-900 tracking-tight">
                 {title}
               </h1>
-              <p className="text-xs text-ink-muted mt-0.5">{subtitle}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
             </div>
           </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Client / Lead Selection Panel (4 cols) */}
-            <div className="lg:col-span-4 glass-card p-4 flex flex-col h-[650px]">
-              <div className="mb-3">
+            <div className="lg:col-span-4 glass-card p-5 flex flex-col h-fit bg-white border border-[#EADFD5] shadow-sm rounded-3xl">
+              <div className="mb-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-subtle" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                   <input
                     type="text"
                     placeholder="Filter clients..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-dark w-full text-xs pl-8 py-2"
+                    className="w-full bg-white border border-[#EADFD5] rounded-2xl pl-10 pr-4 py-2.5 text-stone-900 text-xs font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              <div className="flex-1 space-y-2.5">
                 {filteredLeads.map((item) => {
                   const isSelected = item.lead.id === selectedLeadId;
                   return (
@@ -140,46 +142,41 @@ export default function LeadSelectorLayout({
                         router.replace(`/${feature}?leadId=${item.lead.id}`);
                       }}
                       className={cn(
-                        "p-3 rounded-xl border transition-all cursor-pointer group text-left",
+                        "p-3.5 rounded-2xl border transition-all cursor-pointer group text-left",
                         isSelected
-                          ? "bg-primary/15 border-primary shadow-sm"
-                          : "bg-surface-2/60 hover:bg-surface-2 border-hairline"
+                          ? "bg-[#ECFDF5]/70 border-[#059669] shadow-xs border-2"
+                          : "bg-white hover:bg-[#FAF6F1]/80 border-[#EADFD5]"
                       )}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
                             className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                               isSelected
-                                ? "bg-primary text-white"
-                                : "bg-surface-3 text-ink-subtle"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-stone-100 text-stone-600 border border-stone-200"
                             )}
                           >
                             <User className="w-4 h-4" />
                           </div>
-                          <div>
-                            <h4
-                              className={cn(
-                                "text-xs font-semibold transition-colors",
-                                isSelected ? "text-primary-hover font-bold" : "text-ink"
-                              )}
-                            >
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-black text-stone-900 tracking-tight truncate">
                               {item.lead.name}
                             </h4>
-                            <span className="text-[11px] text-ink-subtle flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3" />
-                              {item.lead.location}
+                            <span className="text-xs text-stone-500 font-medium flex items-center gap-1 mt-0.5 truncate">
+                              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                              <span className="truncate">{item.lead.location}</span>
                             </span>
                           </div>
                         </div>
 
                         {item.analysis ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <TagBadge tag={item.analysis.tag} />
                             <span
                               className={cn(
-                                "font-mono text-xs font-bold",
+                                "font-mono text-xs font-bold px-2 py-0.5 rounded-full border bg-white border-stone-200 shrink-0",
                                 getScoreColor(item.analysis.score)
                               )}
                             >
@@ -187,14 +184,14 @@ export default function LeadSelectorLayout({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-ink-subtle italic">Pending</span>
+                          <span className="text-xs font-mono text-stone-400 italic shrink-0">Pending</span>
                         )}
                       </div>
 
-                      <div className="mt-2 text-[11px] text-ink-subtle flex items-center justify-between border-t border-hairline/40 pt-1.5">
-                        <span>{item.lead.propertyType} {item.lead.bhkConfig ? `· ${item.lead.bhkConfig}` : ""}</span>
+                      <div className="mt-2.5 text-xs text-stone-600 flex items-center justify-between border-t border-[#EADFD5]/70 pt-2 font-mono">
+                        <span className="font-sans font-medium text-stone-700">{item.lead.propertyType} {item.lead.bhkConfig ? `· ${item.lead.bhkConfig}` : ""}</span>
                         {item.lead.budgetMax && (
-                          <span className="font-mono text-primary-hover font-medium">
+                          <span className="font-mono text-stone-900 font-extrabold">
                             ≤ {formatCurrency(item.lead.budgetMax)}
                           </span>
                         )}
@@ -210,7 +207,11 @@ export default function LeadSelectorLayout({
               {selectedItem ? (
                 <>
                   {feature === "analysis" && selectedItem.analysis && (
-                    <AnalysisDisplay analysis={selectedItem.analysis as any} />
+                    <AnalysisDisplay
+                      analysis={selectedItem.analysis as any}
+                      leadPhone={selectedItem.lead.phone}
+                      leadEmail={selectedItem.lead.email}
+                    />
                   )}
 
                   {feature === "chat" && (
@@ -218,10 +219,12 @@ export default function LeadSelectorLayout({
                   )}
 
                   {(feature === "callprep" || feature === "call-prep") && selectedItem.analysis && (
-                    <CallPrep
+                    <CustomerSimulator
                       key={selectedItem.lead.id}
                       leadId={selectedItem.lead.id}
                       leadName={selectedItem.lead.name}
+                      leadPhone={selectedItem.lead.phone}
+                      leadEmail={selectedItem.lead.email}
                       leadLocation={selectedItem.lead.location}
                       leadPropertyType={selectedItem.lead.propertyType}
                       leadBhk={selectedItem.lead.bhkConfig || undefined}
