@@ -9,11 +9,10 @@ import {
   User,
   Building2,
   MapPin,
-  IndianRupee,
   Loader2,
-  Search,
   Sparkles,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -57,12 +56,14 @@ export default function CallPrep({
   callPrepQuestions,
 }: CallPrepProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loadedLeadId, setLoadedLeadId] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loadingProps, setLoadingProps] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Load call prep history for specific leadId on mount / lead change
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
       const saved = localStorage.getItem(`catapult_callprep_${leadId}`);
@@ -71,6 +72,7 @@ export default function CallPrep({
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setMessages(parsed);
+            setLoadedLeadId(leadId);
             return;
           }
         } catch {
@@ -78,14 +80,20 @@ export default function CallPrep({
         }
       }
       setMessages([]);
+      setLoadedLeadId(leadId);
     }
   }, [leadId]);
 
+  // Save ONLY when state is verified to belong to THIS leadId
   useEffect(() => {
-    if (typeof window !== "undefined" && leadId && messages.length > 0) {
-      localStorage.setItem(`catapult_callprep_${leadId}`, JSON.stringify(messages));
+    if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
+      if (messages.length > 0) {
+        localStorage.setItem(`catapult_callprep_${leadId}`, JSON.stringify(messages));
+      } else {
+        localStorage.removeItem(`catapult_callprep_${leadId}`);
+      }
     }
-  }, [messages, leadId]);
+  }, [messages, leadId, loadedLeadId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -97,6 +105,13 @@ export default function CallPrep({
   useEffect(() => {
     fetchInitialProperties();
   }, [leadId, leadLocation]);
+
+  const clearPrepHistory = () => {
+    setMessages([]);
+    if (typeof window !== "undefined" && leadId) {
+      localStorage.removeItem(`catapult_callprep_${leadId}`);
+    }
+  };
 
   const fetchInitialProperties = async () => {
     setLoadingProps(true);
@@ -111,7 +126,6 @@ export default function CallPrep({
         if (data.properties && data.properties.length > 0) {
           setProperties(data.properties);
         } else {
-          // Fallback fetch all properties if city search gave empty
           const fallbackRes = await fetch("/api/properties");
           if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json();
@@ -129,7 +143,6 @@ export default function CallPrep({
   const searchProperties = async (query: string) => {
     setLoadingProps(true);
     try {
-      // Extract city if present in string
       const cityMatch = query.match(/gurugram|gurgaon|noida|mumbai|bangalore|bengaluru|hyderabad|pune/i);
       let queryUrl = "/api/properties";
       if (cityMatch) {
@@ -144,7 +157,6 @@ export default function CallPrep({
         if (data.properties && data.properties.length > 0) {
           setProperties(data.properties);
         } else {
-          // If no specific match, refresh default city properties
           await fetchInitialProperties();
         }
       }
@@ -163,7 +175,6 @@ export default function CallPrep({
     setInput("");
     setIsLoading(true);
 
-    // Filter/search properties on user message
     searchProperties(content);
 
     try {
@@ -230,25 +241,37 @@ export default function CallPrep({
 
   return (
     <div className="space-y-6 w-full">
-      {/* Top: AI Call Prep Chat Window (Full Width for Maximum Readability) */}
-      <div className="glass-card flex flex-col h-[580px] w-full">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-hairline bg-surface-1/40">
-          <Phone className="w-4 h-4 text-primary-hover" />
-          <h3 className="text-sm font-semibold text-ink">
-            AI Call Prep — {leadName}
-          </h3>
+      {/* Top: AI Call Prep Chat Window (Generous Height for Maximum Readability) */}
+      <div className="glass-card flex flex-col h-[700px] w-full">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-surface-1/40">
+          <div className="flex items-center gap-2">
+            <Phone className="w-4 h-4 text-primary-hover" />
+            <h3 className="text-sm font-semibold text-ink">
+              AI Call Prep — {leadName}
+            </h3>
+          </div>
+          {messages.length > 0 && (
+            <button
+              onClick={clearPrepHistory}
+              className="text-xs text-ink-subtle hover:text-hot flex items-center gap-1 transition-colors px-2.5 py-1 rounded bg-surface-2/60 border border-hairline/40"
+              title="Clear call prep history for this lead"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear Prep History
+            </button>
+          )}
         </div>
 
         {/* Pre-call Qualification Checklist */}
-        <div className="px-5 py-3 border-b border-hairline bg-surface-1/60">
+        <div className="px-5 py-3.5 border-b border-hairline bg-surface-1/60">
           <p className="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider mb-2">
             Pre-call Qualification Checklist
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[100px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[130px] overflow-y-auto pr-1">
             {callPrepQuestions.map((q, i) => (
               <label
                 key={i}
-                className="flex items-start gap-2 text-xs text-ink-muted cursor-pointer group bg-surface-2/40 p-2 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
+                className="flex items-start gap-2 text-xs text-ink-muted cursor-pointer group bg-surface-2/40 p-2.5 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
               >
                 <input
                   type="checkbox"
@@ -262,7 +285,7 @@ export default function CallPrep({
           </div>
         </div>
 
-        {/* Chat History */}
+        {/* Chat History Container */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
@@ -270,8 +293,8 @@ export default function CallPrep({
               <p className="text-sm font-medium text-ink-muted mb-1">
                 Prepare for call with {leadName}
               </p>
-              <p className="text-xs text-ink-subtle max-w-sm">
-                Ask for property comparisons, objection handling, or quick picks. Output tables and formatted markdown have maximum width for crystal clear readability.
+              <p className="text-xs text-ink-subtle max-w-md">
+                Ask for property comparisons, objection handling, or quick picks. Output tables and formatted markdown expand cleanly across the entire window.
               </p>
             </div>
           )}
@@ -294,7 +317,7 @@ export default function CallPrep({
                 )}
                 <div
                   className={cn(
-                    "max-w-[92%] rounded-xl px-4 py-3 text-sm overflow-hidden shadow-sm",
+                    "max-w-[94%] rounded-xl px-4 py-3 text-sm overflow-hidden shadow-sm",
                     msg.role === "user"
                       ? "bg-primary text-white font-medium"
                       : "bg-surface-2 text-ink-muted border border-hairline"
