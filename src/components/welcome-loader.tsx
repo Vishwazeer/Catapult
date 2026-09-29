@@ -9,9 +9,9 @@ export default function WelcomeLoader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Animate progress bar from 0 to 100% over 1.3s
+    // Animate progress bar from 0 to 100% over 3.5s
     const startTime = Date.now();
-    const duration = 1300;
+    const duration = 3500;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -22,7 +22,7 @@ export default function WelcomeLoader() {
         clearInterval(interval);
         setTimeout(() => {
           setLoading(false);
-        }, 220);
+        }, 300);
       }
     }, 20);
 
