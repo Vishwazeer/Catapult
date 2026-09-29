@@ -44,7 +44,7 @@ interface BulkNudgeSectionProps {
 }
 
 export default function BulkNudgeSection({ leads, onNudgeComplete }: BulkNudgeSectionProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sentLeadIds, setSentLeadIds] = useState<number[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>(() => {
