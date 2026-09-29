@@ -25,6 +25,28 @@ export default function LeadChat({ leadId, initialMessages = [] }: LeadChatProps
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && leadId) {
+      const saved = localStorage.getItem(`catapult_chat_${leadId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        } catch {
+          // Skip
+        }
+      }
+    }
+  }, [leadId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && leadId && messages.length > 0) {
+      localStorage.setItem(`catapult_chat_${leadId}`, JSON.stringify(messages));
+    }
+  }, [messages, leadId]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }

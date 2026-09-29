@@ -64,6 +64,28 @@ export default function CallPrep({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && leadId) {
+      const saved = localStorage.getItem(`catapult_callprep_${leadId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        } catch {
+          // Skip
+        }
+      }
+    }
+  }, [leadId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && leadId && messages.length > 0) {
+      localStorage.setItem(`catapult_callprep_${leadId}`, JSON.stringify(messages));
+    }
+  }, [messages, leadId]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }

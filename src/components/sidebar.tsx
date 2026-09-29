@@ -9,6 +9,9 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  Brain,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -18,6 +21,12 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads/new", label: "New Lead", icon: UserPlus },
   { href: "/properties", label: "Properties", icon: Building2 },
+];
+
+const aiSuiteItems = [
+  { href: "/analysis", label: "AI Analysis", icon: Brain },
+  { href: "/chat", label: "Lead Chat", icon: MessageSquare },
+  { href: "/call-prep", label: "AI Call Prep", icon: Sparkles, badge: "PRO" },
 ];
 
 export default function Sidebar() {
@@ -33,7 +42,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-5 border-b border-hairline gap-3">
-        <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center flex-shrink-0 shadow-sm shadow-primary/20">
           <Zap className="w-4 h-4 text-white" />
         </div>
         <AnimatePresence>
@@ -51,50 +60,106 @@ export default function Sidebar() {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 py-4 px-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group",
-                isActive
-                  ? "bg-primary/15 text-primary-hover border border-primary/20"
-                  : "text-ink-muted hover:bg-surface-2 hover:text-ink"
-              )}
-            >
-              <item.icon
+      <nav className="flex-1 py-4 px-3 space-y-6 overflow-y-auto">
+        {/* Main Nav */}
+        <div className="space-y-1">
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
                 className={cn(
-                  "w-5 h-5 flex-shrink-0 transition-colors",
-                  isActive ? "text-primary-hover" : "text-ink-subtle group-hover:text-ink-muted"
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  isActive
+                    ? "bg-primary/15 text-primary-hover border border-primary/20"
+                    : "text-ink-muted hover:bg-surface-2 hover:text-ink"
                 )}
-              />
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-sm font-medium whitespace-nowrap"
-                  >
-                    {item.label}
-                  </motion.span>
+              >
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 flex-shrink-0 transition-colors",
+                    isActive ? "text-primary-hover" : "text-ink-subtle group-hover:text-ink-muted"
+                  )}
+                />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="text-sm font-medium whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* AI Suite Nav */}
+        <div className="space-y-1">
+          {!collapsed && (
+            <div className="px-3 pb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-subtle flex items-center gap-1.5">
+                <Brain className="w-3 h-3 text-primary-hover" />
+                AI Intelligence
+              </span>
+            </div>
+          )}
+          {aiSuiteItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                  isActive
+                    ? "bg-primary/15 text-primary-hover border border-primary/20"
+                    : "text-ink-muted hover:bg-surface-2 hover:text-ink"
                 )}
-              </AnimatePresence>
-            </Link>
-          );
-        })}
+              >
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 flex-shrink-0 transition-colors",
+                    isActive ? "text-primary-hover" : "text-primary/70 group-hover:text-primary-hover"
+                  )}
+                />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center justify-between w-full"
+                    >
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {item.label}
+                      </span>
+                      {item.badge && (
+                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-primary-hover border border-primary/30">
+                          {item.badge}
+                        </span>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Collapse Toggle */}
       <div className="p-3 border-t border-hairline">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center p-2 rounded-md text-ink-subtle hover:bg-surface-2 hover:text-ink transition-all"
+          className="w-full flex items-center justify-center p-2 rounded-lg text-ink-subtle hover:bg-surface-2 hover:text-ink transition-all"
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
