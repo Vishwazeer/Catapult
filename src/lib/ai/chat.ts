@@ -48,7 +48,7 @@ Respond concisely but with actionable specifics. Reference the lead's actual dat
   ];
 
   return streamText({
-    model: groq('llama-3.3-70b-versatile'),
+    model: groq('openai/gpt-oss-120b'),
     system: systemPrompt,
     messages,
   });

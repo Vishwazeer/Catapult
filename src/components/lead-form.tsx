@@ -40,6 +40,7 @@ export default function LeadForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<FormData>({
@@ -109,6 +110,7 @@ export default function LeadForm() {
     if (!validateStep(currentStep)) return;
     
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
@@ -118,14 +120,17 @@ export default function LeadForm() {
         body: JSON.stringify(formData),
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.id) {
         router.push(`/leads/${data.id}`);
       } else {
-        console.error("Submission failed");
+        const errorMsg = data.error || 'Submission failed. Please check your network or try again.';
+        console.error('Submission failed:', errorMsg);
+        setSubmitError(errorMsg);
       }
-    } catch (error) {
-      console.error("Submission error:", error);
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      setSubmitError(error?.message || 'Network error occurred during submission.');
     } finally {
       setIsSubmitting(false);
     }
@@ -627,6 +632,12 @@ export default function LeadForm() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {submitError && (
+        <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          {submitError}
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       <div className="flex items-center justify-between mt-8 pt-4 border-t border-hairline">

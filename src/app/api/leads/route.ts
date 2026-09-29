@@ -10,9 +10,38 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    const [lead] = await db.insert(leads).values(body).returning();
+    // Convert string form values to proper types for DB
+    const leadData = {
+      name: body.name,
+      email: body.email || null,
+      phone: body.phone || null,
+      location: body.location,
+      propertyType: body.propertyType,
+      propertyRequirement: body.propertyRequirement || null,
+      bhkConfig: body.bhkConfig || null,
+      sqftMin: body.sqftMin ? parseInt(body.sqftMin) : null,
+      sqftMax: body.sqftMax ? parseInt(body.sqftMax) : null,
+      preferredFloor: body.preferredFloor || null,
+      facingDirection: body.facingDirection || null,
+      budgetMin: body.budgetMin ? parseFloat(body.budgetMin) : null,
+      budgetMax: body.budgetMax ? parseFloat(body.budgetMax) : null,
+      loanReady: body.loanReady || null,
+      maxLoanAmount: body.maxLoanAmount ? parseFloat(body.maxLoanAmount) : null,
+      creditScoreRange: body.creditScoreRange || null,
+      downPaymentAvailable: body.downPaymentAvailable ? parseFloat(body.downPaymentAvailable) : null,
+      buyingTimeline: body.buyingTimeline,
+      occupancyType: body.occupancyType || null,
+      possessionPreference: body.possessionPreference || null,
+      preferredAmenities: body.preferredAmenities?.length > 0 ? body.preferredAmenities : null,
+      mustHaveFeatures: body.mustHaveFeatures || null,
+      dealBreakers: body.dealBreakers || null,
+      customerMessage: body.customerMessage,
+      source: body.source || null,
+    };
     
-    const analysis = await analyzeLead(body);
+    const [lead] = await db.insert(leads).values(leadData).returning();
+    
+    const analysis = await analyzeLead(leadData);
     
     const [insertedAnalysis] = await db.insert(leadAnalyses).values({
       leadId: lead.id,
@@ -29,9 +58,9 @@ export async function POST(req: NextRequest) {
     }).returning();
     
     return NextResponse.json({ id: lead.id, lead, analysis: insertedAnalysis }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating lead:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

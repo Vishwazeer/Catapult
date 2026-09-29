@@ -1,4 +1,5 @@
 import { google } from '@ai-sdk/google';
+import { createGroq } from '@ai-sdk/groq';
 import { generateObject } from 'ai';
 import { leadAnalysisSchema, type LeadAnalysis } from './schemas';
 
@@ -52,12 +53,26 @@ Requirements:
 Customer Message (verbatim):
 ${leadData.customerMessage || 'No message provided.'}`;
 
-  const { object } = await generateObject({
-    model: google('gemini-2.5-flash-preview-05-20'),
-    schema: leadAnalysisSchema,
-    system: systemPrompt,
-    prompt: userPrompt,
-  });
-
-  return object;
+  // Primary: Gemini Flash Latest
+  try {
+    const { object } = await generateObject({
+      model: google('gemini-flash-latest'),
+      schema: leadAnalysisSchema,
+      system: systemPrompt,
+      prompt: userPrompt,
+    });
+    return object;
+  } catch (primaryErr: any) {
+    console.warn('Gemini generateObject failed, attempting fallback to Groq:', primaryErr?.message || primaryErr);
+    
+    // Resilient Fallback: Groq (openai/gpt-oss-120b)
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+    const { object } = await generateObject({
+      model: groq('openai/gpt-oss-120b'),
+      schema: leadAnalysisSchema,
+      system: systemPrompt,
+      prompt: userPrompt,
+    });
+    return object;
+  }
 }
