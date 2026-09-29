@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import NavigationBar from "@/components/navigation-bar";
+import WelcomeLoader from "@/components/welcome-loader";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-canvas text-ink">
+        <WelcomeLoader />
         <Suspense fallback={null}>
           <NavigationBar />
         </Suspense>
