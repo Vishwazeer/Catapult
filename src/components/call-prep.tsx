@@ -18,6 +18,7 @@ import {
   Save,
   Check,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -68,8 +69,8 @@ export default function CallPrep({
   const [loadingProps, setLoadingProps] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Custom Checklist State
-  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
+  // Active Checklist State (supports removing ANY item + adding custom items)
+  const [activeChecklist, setActiveChecklist] = useState<string[]>(callPrepQuestions || []);
   const [newQuestionInput, setNewQuestionInput] = useState("");
   const [showAddQuestion, setShowAddQuestion] = useState(false);
 
@@ -79,7 +80,7 @@ export default function CallPrep({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Load call prep history & custom checklist & call notes for specific leadId
+  // Load call prep history & active checklist & call notes for specific leadId
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
       // Purge old un-isolated legacy key
@@ -99,25 +100,27 @@ export default function CallPrep({
         setMessages([]);
       }
 
-      // Load custom checklist items
-      const savedChecklist = localStorage.getItem(`catapult_checklist_${leadId}`);
+      // Load active checklist items (or fallback to callPrepQuestions)
+      const savedChecklist = localStorage.getItem(`catapult_active_checklist_v2_${leadId}`);
       if (savedChecklist) {
         try {
           const parsedChecklist = JSON.parse(savedChecklist);
           if (Array.isArray(parsedChecklist)) {
-            setCustomQuestions(parsedChecklist);
+            setActiveChecklist(parsedChecklist);
+          } else {
+            setActiveChecklist(callPrepQuestions || []);
           }
         } catch {
-          // Skip
+          setActiveChecklist(callPrepQuestions || []);
         }
       } else {
-        setCustomQuestions([]);
+        setActiveChecklist(callPrepQuestions || []);
       }
 
       setLoadedLeadId(leadId);
       fetchNotes();
     }
-  }, [leadId]);
+  }, [leadId, callPrepQuestions]);
 
   // Fetch call notes from DB
   const fetchNotes = async () => {
@@ -168,12 +171,12 @@ export default function CallPrep({
     }
   }, [messages, leadId, loadedLeadId]);
 
-  // Save custom checklist items
+  // Save active checklist items per lead
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
-      localStorage.setItem(`catapult_checklist_${leadId}`, JSON.stringify(customQuestions));
+      localStorage.setItem(`catapult_active_checklist_v2_${leadId}`, JSON.stringify(activeChecklist));
     }
-  }, [customQuestions, leadId, loadedLeadId]);
+  }, [activeChecklist, leadId, loadedLeadId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -194,17 +197,26 @@ export default function CallPrep({
     }
   };
 
-  const handleAddCustomQuestion = () => {
+  const handleAddQuestion = () => {
     if (!newQuestionInput.trim()) return;
-    const updated = [...customQuestions, newQuestionInput.trim()];
-    setCustomQuestions(updated);
+    const updated = [...activeChecklist, newQuestionInput.trim()];
+    setActiveChecklist(updated);
     setNewQuestionInput("");
     setShowAddQuestion(false);
   };
 
-  const handleRemoveCustomQuestion = (index: number) => {
-    const updated = customQuestions.filter((_, i) => i !== index);
-    setCustomQuestions(updated);
+  // Allows removing ANY item (both pre-existing and custom added items)
+  const handleRemoveQuestion = (index: number) => {
+    const updated = activeChecklist.filter((_, i) => i !== index);
+    setActiveChecklist(updated);
+  };
+
+  // Reset checklist back to default AI questions
+  const handleResetChecklist = () => {
+    setActiveChecklist(callPrepQuestions || []);
+    if (typeof window !== "undefined" && leadId) {
+      localStorage.removeItem(`catapult_active_checklist_v2_${leadId}`);
+    }
   };
 
   const fetchInitialProperties = async () => {
@@ -333,8 +345,6 @@ export default function CallPrep({
     }
   };
 
-  const allQuestions = [...callPrepQuestions, ...customQuestions];
-
   return (
     <div className="space-y-6 w-full relative">
       {/* Top: AI Call Prep Chat Window */}
@@ -369,20 +379,29 @@ export default function CallPrep({
           </div>
         </div>
 
-        {/* Pre-call Qualification Checklist (with manual add option) */}
+        {/* Pre-call Qualification Checklist (with remove option for ALL items + add custom item) */}
         <div className="px-5 py-3.5 border-b border-hairline bg-surface-1/60">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider">
-              Pre-call Qualification Checklist ({allQuestions.length})
+              Pre-call Qualification Checklist ({activeChecklist.length})
             </p>
-            {!showAddQuestion && (
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setShowAddQuestion(true)}
-                className="text-xs text-primary-hover hover:underline flex items-center gap-1 font-medium"
+                onClick={handleResetChecklist}
+                className="text-xs text-ink-subtle hover:text-ink flex items-center gap-1 font-medium transition-colors"
+                title="Reset checklist to original AI default questions"
               >
-                <Plus className="w-3 h-3" /> Add item
+                <RotateCcw className="w-3 h-3" /> Reset defaults
               </button>
-            )}
+              {!showAddQuestion && (
+                <button
+                  onClick={() => setShowAddQuestion(true)}
+                  className="text-xs text-primary-hover hover:underline flex items-center gap-1 font-medium"
+                >
+                  <Plus className="w-3 h-3" /> Add item
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Add custom question inline input */}
@@ -395,7 +414,7 @@ export default function CallPrep({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAddCustomQuestion();
+                    handleAddQuestion();
                   }
                 }}
                 placeholder="Type custom checklist question..."
@@ -403,7 +422,7 @@ export default function CallPrep({
                 autoFocus
               />
               <button
-                onClick={handleAddCustomQuestion}
+                onClick={handleAddQuestion}
                 className="px-2.5 py-1 bg-primary text-white rounded text-xs font-semibold hover:bg-primary-hover transition-colors"
               >
                 Add
@@ -417,13 +436,15 @@ export default function CallPrep({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[140px] overflow-y-auto pr-1">
-            {allQuestions.map((q, i) => {
-              const isCustom = i >= callPrepQuestions.length;
-              const customIndex = i - callPrepQuestions.length;
-              return (
+          {activeChecklist.length === 0 ? (
+            <div className="py-2 text-center text-xs text-ink-subtle italic">
+              No checklist items remaining. Click &quot;Add item&quot; or &quot;Reset defaults&quot; to restore.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[140px] overflow-y-auto pr-1">
+              {activeChecklist.map((q, i) => (
                 <div
-                  key={i}
+                  key={`${i}-${q.slice(0, 15)}`}
                   className="flex items-start justify-between gap-2 text-xs text-ink-muted group bg-surface-2/40 p-2.5 rounded-lg border border-hairline/40 hover:border-hairline hover:bg-surface-2/80 transition-all"
                 >
                   <label className="flex items-start gap-2 cursor-pointer flex-1">
@@ -435,19 +456,18 @@ export default function CallPrep({
                       {q}
                     </span>
                   </label>
-                  {isCustom && (
-                    <button
-                      onClick={() => handleRemoveCustomQuestion(customIndex)}
-                      className="text-ink-subtle hover:text-hot p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Remove item"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  {/* Remove X button on EVERY item (pre-existing AND custom added) */}
+                  <button
+                    onClick={() => handleRemoveQuestion(i)}
+                    className="text-ink-subtle hover:text-hot p-0.5 opacity-60 group-hover:opacity-100 transition-opacity"
+                    title="Remove item from checklist"
+                  >
+                    <X className="w-3.5 h-3.5 text-hot/80 hover:text-hot" />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Chat History Container */}
