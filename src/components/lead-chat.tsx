@@ -28,7 +28,10 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
   // Load chat history for specific leadId cleanly on mount or when leadId changes
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
-      const saved = localStorage.getItem(`catapult_chat_${leadId}`);
+      // Purge old un-isolated legacy key
+      localStorage.removeItem(`catapult_chat_${leadId}`);
+
+      const saved = localStorage.getItem(`catapult_chat_v2_${leadId}`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -41,7 +44,7 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
           // Skip
         }
       }
-      setMessages(initialMessages && initialMessages.length > 0 ? initialMessages : []);
+      setMessages([]);
       setLoadedLeadId(leadId);
     }
   }, [leadId]);
@@ -50,9 +53,9 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
       if (messages.length > 0) {
-        localStorage.setItem(`catapult_chat_${leadId}`, JSON.stringify(messages));
+        localStorage.setItem(`catapult_chat_v2_${leadId}`, JSON.stringify(messages));
       } else {
-        localStorage.removeItem(`catapult_chat_${leadId}`);
+        localStorage.removeItem(`catapult_chat_v2_${leadId}`);
       }
     }
   }, [messages, leadId, loadedLeadId]);
@@ -67,6 +70,7 @@ export default function LeadChat({ leadId, initialMessages }: LeadChatProps) {
     setMessages([]);
     if (typeof window !== "undefined" && leadId) {
       localStorage.removeItem(`catapult_chat_${leadId}`);
+      localStorage.removeItem(`catapult_chat_v2_${leadId}`);
     }
   };
 

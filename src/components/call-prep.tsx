@@ -66,7 +66,10 @@ export default function CallPrep({
   // Load call prep history for specific leadId on mount / lead change
   useEffect(() => {
     if (typeof window !== "undefined" && leadId) {
-      const saved = localStorage.getItem(`catapult_callprep_${leadId}`);
+      // Purge old un-isolated legacy key
+      localStorage.removeItem(`catapult_callprep_${leadId}`);
+
+      const saved = localStorage.getItem(`catapult_callprep_v2_${leadId}`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -88,9 +91,9 @@ export default function CallPrep({
   useEffect(() => {
     if (typeof window !== "undefined" && leadId && loadedLeadId === leadId) {
       if (messages.length > 0) {
-        localStorage.setItem(`catapult_callprep_${leadId}`, JSON.stringify(messages));
+        localStorage.setItem(`catapult_callprep_v2_${leadId}`, JSON.stringify(messages));
       } else {
-        localStorage.removeItem(`catapult_callprep_${leadId}`);
+        localStorage.removeItem(`catapult_callprep_v2_${leadId}`);
       }
     }
   }, [messages, leadId, loadedLeadId]);
@@ -110,6 +113,7 @@ export default function CallPrep({
     setMessages([]);
     if (typeof window !== "undefined" && leadId) {
       localStorage.removeItem(`catapult_callprep_${leadId}`);
+      localStorage.removeItem(`catapult_callprep_v2_${leadId}`);
     }
   };
 
