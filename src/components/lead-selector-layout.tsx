@@ -173,10 +173,9 @@ export default function LeadSelectorLayout({
 
                         {item.analysis ? (
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <TagBadge tag={item.analysis.tag} />
                             <span
                               className={cn(
-                                "font-mono text-xs font-bold px-2 py-0.5 rounded-full border bg-white border-stone-200 shrink-0",
+                                "font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-full border bg-white border-stone-200 shrink-0 shadow-2xs",
                                 getScoreColor(item.analysis.score)
                               )}
                             >

@@ -132,10 +132,25 @@ export default function CustomerSimulator({
     setChecklist(initialCallPrepQuestions.map(q => ({ text: q, done: false })));
   }, [initialCallPrepQuestions]);
 
-  // Load history on mount
+  // Fetch call notes from DB
+  const fetchCallNotes = async () => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotes(data.lead?.callNotes || "");
+      }
+    } catch (err) {
+      console.error("Failed to fetch lead call notes", err);
+    }
+  };
+
+  // Load history & call notes on mount and leadId change
   useEffect(() => {
     const loadHistory = async () => {
       try {
+        fetchCallNotes();
+
         const localData = localStorage.getItem(storageKey);
         if (localData) {
           setMessages(JSON.parse(localData));
@@ -350,7 +365,10 @@ export default function CustomerSimulator({
             </button>
           )}
           <button
-            onClick={() => setIsNotesModalOpen(true)}
+            onClick={() => {
+              fetchCallNotes();
+              setIsNotesModalOpen(true);
+            }}
             className="p-2 text-ink-muted hover:text-ink hover:bg-surface-2 rounded-md transition-colors"
             title="Call Notes"
           >

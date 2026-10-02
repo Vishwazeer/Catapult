@@ -207,7 +207,10 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
         {/* ALWAYS Visible Action Buttons in Top Right Corner */}
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setShowNotesModal(true)}
+            onClick={() => {
+              fetchNotes();
+              setShowNotesModal(true);
+            }}
             className="text-xs font-mono font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1.5 transition-all px-3 py-1 rounded-full bg-white border border-[#EADFD5] shadow-xs"
             title="Open Call Notes"
           >
