@@ -188,12 +188,12 @@ export default function CustomerSimulator({
   useEffect(() => {
     if (messagesContainerRef.current) {
       const el = messagesContainerRef.current;
-      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
       if (isNearBottom) {
         el.scrollTop = el.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [messages, analysisResult]);
 
   const saveMessagesLocally = (msgs: Message[]) => {
     setMessages(msgs);
@@ -278,6 +278,9 @@ export default function CustomerSimulator({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ saveCustomerResponse: aiFullResponse })
       }).catch(console.error);
+
+      // Auto-trigger re-analysis & property matching after customer replies
+      handleAnalyze();
 
     } catch (error) {
       console.error("Error during simulation:", error);
