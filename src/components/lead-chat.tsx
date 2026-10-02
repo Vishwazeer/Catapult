@@ -343,29 +343,29 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
       {/* Call Notes Modal Pop-up */}
       <AnimatePresence>
         {showNotesModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-surface-1 border border-hairline rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
+              className="bg-white border border-[#EADFD5] rounded-3xl p-6 w-full max-w-lg shadow-2xl relative"
             >
-              <div className="flex items-center justify-between pb-4 border-b border-hairline mb-4">
+              <div className="flex items-center justify-between pb-4 border-b border-[#EADFD5] mb-4">
                 <div className="flex items-center gap-2">
-                  <NotebookPen className="w-5 h-5 text-primary-hover" />
-                  <h3 className="text-base font-semibold text-ink">
+                  <NotebookPen className="w-5 h-5 text-[#059669]" />
+                  <h3 className="text-base font-black text-stone-900 tracking-tight">
                     Call Notes {leadName ? `— ${leadName}` : ""}
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowNotesModal(false)}
-                  className="p-1 rounded text-ink-subtle hover:text-ink transition-colors"
+                  className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <p className="text-xs text-ink-subtle mb-3">
+              <p className="text-xs text-stone-500 font-medium mb-3">
                 Record and save call notes directly to the database for future reference.
               </p>
 
@@ -374,28 +374,28 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
                 onChange={(e) => setCallNotes(e.target.value)}
                 placeholder="Type your call notes here..."
                 rows={6}
-                className="w-full input-dark p-3 text-xs leading-relaxed resize-none font-sans"
+                className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 resize-none"
               />
 
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-hairline">
+              <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#EADFD5]">
                 {savedSuccess ? (
-                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Notes saved to database!
+                  <span className="text-xs text-[#059669] font-bold flex items-center gap-1 font-mono">
+                    <Check className="w-4 h-4" /> Notes saved to database!
                   </span>
                 ) : (
-                  <span className="text-[11px] text-ink-subtle">Stored in Neon Postgres</span>
+                  <span className="text-[11px] font-mono text-stone-400">Stored in Neon Postgres</span>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => setShowNotesModal(false)}
-                    className="px-3.5 py-1.5 rounded-lg border border-hairline text-xs text-ink-muted hover:text-ink hover:bg-surface-2 transition-all"
+                    className="px-5 py-2 rounded-full border border-[#EADFD5] text-xs font-mono font-bold uppercase tracking-wider text-stone-700 hover:bg-stone-100 transition-all"
                   >
                     Close
                   </button>
                   <button
                     onClick={saveCallNotes}
                     disabled={isSavingNotes}
-                    className="btn-primary px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                    className="px-6 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-full text-xs font-mono font-bold uppercase tracking-wider shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {isSavingNotes ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

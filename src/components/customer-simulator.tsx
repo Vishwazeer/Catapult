@@ -124,6 +124,7 @@ export default function CustomerSimulator({
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const storageKey = `catapult_sim_v2_${leadId}`;
 
@@ -177,9 +178,11 @@ export default function CustomerSimulator({
     loadHistory();
   }, [leadId, storageKey]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll inside internal chat container only (NEVER scroll main browser window)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, analysisResult]);
 
   const saveMessagesLocally = (msgs: Message[]) => {
@@ -469,7 +472,7 @@ export default function CustomerSimulator({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6" style={{ backgroundImage: "radial-gradient(circle at center, var(--surface-2) 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-6" style={{ backgroundImage: "radial-gradient(circle at center, var(--surface-2) 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-70">
             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center">
@@ -758,43 +761,43 @@ export default function CustomerSimulator({
       {/* Notes Modal Overlay */}
       <AnimatePresence>
         {isNotesModalOpen && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg glass-card border border-hairline rounded-xl shadow-2xl overflow-hidden bg-surface-1"
+              className="w-full max-w-lg bg-white border border-[#EADFD5] rounded-3xl shadow-2xl overflow-hidden relative"
             >
-              <div className="flex items-center justify-between p-4 border-b border-hairline bg-surface-2/50">
-                <h3 className="font-semibold text-ink flex items-center gap-2">
-                  <NotebookPen className="w-4 h-4" />
-                  Call Notes
+              <div className="flex items-center justify-between p-5 border-b border-[#EADFD5] bg-[#FAF6F1]">
+                <h3 className="font-black text-stone-900 text-base tracking-tight flex items-center gap-2">
+                  <NotebookPen className="w-4 h-4 text-[#059669]" />
+                  Call Notes {leadName ? `— ${leadName}` : ""}
                 </h3>
                 <button
                   onClick={() => setIsNotesModalOpen(false)}
-                  className="p-1 text-ink-muted hover:text-ink hover:bg-surface-2 rounded transition-colors"
+                  className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-4 space-y-4">
+              <div className="p-6 space-y-4">
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Jot down important details, action items, or objections..."
-                  className="input-dark w-full h-40 resize-none rounded-lg p-3"
+                  className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 h-44 resize-none"
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3 pt-2">
                   <button
                     onClick={() => setIsNotesModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface-2 rounded-lg transition-colors"
+                    className="px-6 py-2.5 rounded-full border border-[#EADFD5] text-stone-700 font-mono text-xs uppercase tracking-wider font-bold hover:bg-stone-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes || !notes.trim()}
-                    className="btn-primary px-4 py-2 text-sm"
+                    className="px-6 py-2.5 rounded-full bg-[#059669] hover:bg-[#047857] text-white font-mono text-xs uppercase tracking-wider font-bold shadow-md transition-all disabled:opacity-50"
                   >
                     {isSavingNotes ? "Saving..." : "Save Note"}
                   </button>
