@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Sparkles, Loader2, Trash2, NotebookPen, X, Save, Check } from "lucide-react";
 import { QUICK_CHAT_PROMPTS } from "@/lib/constants";
@@ -27,6 +28,11 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
   const [callNotes, setCallNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -106,7 +112,11 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      if (isNearBottom) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -340,76 +350,79 @@ export default function LeadChat({ leadId, leadName, initialMessages }: LeadChat
         </div>
       </div>
 
-      {/* Call Notes Modal Pop-up */}
-      <AnimatePresence>
-        {showNotesModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-[#EADFD5] rounded-3xl p-6 w-full max-w-lg shadow-2xl relative"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-[#EADFD5] mb-4">
-                <div className="flex items-center gap-2">
-                  <NotebookPen className="w-5 h-5 text-[#059669]" />
-                  <h3 className="text-base font-black text-stone-900 tracking-tight">
-                    Call Notes {leadName ? `— ${leadName}` : ""}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowNotesModal(false)}
-                  className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <p className="text-xs text-stone-500 font-medium mb-3">
-                Record and save call notes directly to the database for future reference.
-              </p>
-
-              <textarea
-                value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
-                placeholder="Type your call notes here..."
-                rows={6}
-                className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 resize-none"
-              />
-
-              <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#EADFD5]">
-                {savedSuccess ? (
-                  <span className="text-xs text-[#059669] font-bold flex items-center gap-1 font-mono">
-                    <Check className="w-4 h-4" /> Notes saved to database!
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-mono text-stone-400">Stored in Neon Postgres</span>
-                )}
-                <div className="flex items-center gap-2.5">
+      {/* Call Notes Modal Pop-up rendered directly on document.body */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showNotesModal && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white border border-[#EADFD5] rounded-3xl p-6 w-full max-w-lg shadow-2xl relative"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-[#EADFD5] mb-4">
+                  <div className="flex items-center gap-2">
+                    <NotebookPen className="w-5 h-5 text-[#059669]" />
+                    <h3 className="text-base font-black text-stone-900 tracking-tight">
+                      Call Notes {leadName ? `— ${leadName}` : ""}
+                    </h3>
+                  </div>
                   <button
                     onClick={() => setShowNotesModal(false)}
-                    className="px-5 py-2 rounded-full border border-[#EADFD5] text-xs font-mono font-bold uppercase tracking-wider text-stone-700 hover:bg-stone-100 transition-all"
+                    className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
                   >
-                    Close
-                  </button>
-                  <button
-                    onClick={saveCallNotes}
-                    disabled={isSavingNotes}
-                    className="px-6 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-full text-xs font-mono font-bold uppercase tracking-wider shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {isSavingNotes ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Save className="w-3.5 h-3.5" />
-                    )}
-                    Save Notes
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
+                <p className="text-xs text-stone-500 font-medium mb-3">
+                  Record and save call notes directly to the database for future reference.
+                </p>
+
+                <textarea
+                  value={callNotes}
+                  onChange={(e) => setCallNotes(e.target.value)}
+                  placeholder="Type your call notes here..."
+                  rows={6}
+                  className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 resize-none"
+                />
+
+                <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#EADFD5]">
+                  {savedSuccess ? (
+                    <span className="text-xs text-[#059669] font-bold flex items-center gap-1 font-mono">
+                      <Check className="w-4 h-4" /> Notes saved to database!
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-mono text-stone-400">Stored in Neon Postgres</span>
+                  )}
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => setShowNotesModal(false)}
+                      className="px-5 py-2 rounded-full border border-[#EADFD5] text-xs font-mono font-bold uppercase tracking-wider text-stone-700 hover:bg-stone-100 transition-all"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={saveCallNotes}
+                      disabled={isSavingNotes}
+                      className="px-6 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-full text-xs font-mono font-bold uppercase tracking-wider shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {isSavingNotes ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      Save Notes
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

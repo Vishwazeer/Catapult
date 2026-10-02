@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -119,10 +120,15 @@ export default function CustomerSimulator({
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
   const [newChecklistItem, setNewChecklistItem] = useState("");
 
-  // Notes Modal
+  // Notes Modal & Portal Mounting
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -178,12 +184,16 @@ export default function CustomerSimulator({
     loadHistory();
   }, [leadId, storageKey]);
 
-  // Auto-scroll inside internal chat container only (NEVER scroll main browser window)
+  // Scroll inner chat container smoothly to bottom only when user is near bottom
   useEffect(() => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      const el = messagesContainerRef.current;
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      if (isNearBottom) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
-  }, [messages, analysisResult]);
+  }, [messages]);
 
   const saveMessagesLocally = (msgs: Message[]) => {
     setMessages(msgs);
@@ -268,9 +278,6 @@ export default function CustomerSimulator({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ saveCustomerResponse: aiFullResponse })
       }).catch(console.error);
-
-      // Auto-trigger re-analysis & property matching after customer replies
-      handleAnalyze();
 
     } catch (error) {
       console.error("Error during simulation:", error);
@@ -758,55 +765,58 @@ export default function CustomerSimulator({
         </div>
       </div>
 
-      {/* Notes Modal Overlay */}
-      <AnimatePresence>
-        {isNotesModalOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white border border-[#EADFD5] rounded-3xl shadow-2xl overflow-hidden relative"
-            >
-              <div className="flex items-center justify-between p-5 border-b border-[#EADFD5] bg-[#FAF6F1]">
-                <h3 className="font-black text-stone-900 text-base tracking-tight flex items-center gap-2">
-                  <NotebookPen className="w-4 h-4 text-[#059669]" />
-                  Call Notes {leadName ? `— ${leadName}` : ""}
-                </h3>
-                <button
-                  onClick={() => setIsNotesModalOpen(false)}
-                  className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Jot down important details, action items, or objections..."
-                  className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 h-44 resize-none"
-                />
-                <div className="flex justify-end gap-3 pt-2">
+      {/* Notes Modal Overlay rendered directly on document.body */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isNotesModalOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full max-w-lg bg-white border border-[#EADFD5] rounded-3xl shadow-2xl overflow-hidden relative"
+              >
+                <div className="flex items-center justify-between p-5 border-b border-[#EADFD5] bg-[#FAF6F1]">
+                  <h3 className="font-black text-stone-900 text-base tracking-tight flex items-center gap-2">
+                    <NotebookPen className="w-4 h-4 text-[#059669]" />
+                    Call Notes {leadName ? `— ${leadName}` : ""}
+                  </h3>
                   <button
                     onClick={() => setIsNotesModalOpen(false)}
-                    className="px-6 py-2.5 rounded-full border border-[#EADFD5] text-stone-700 font-mono text-xs uppercase tracking-wider font-bold hover:bg-stone-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveNotes}
-                    disabled={isSavingNotes || !notes.trim()}
-                    className="px-6 py-2.5 rounded-full bg-[#059669] hover:bg-[#047857] text-white font-mono text-xs uppercase tracking-wider font-bold shadow-md transition-all disabled:opacity-50"
-                  >
-                    {isSavingNotes ? "Saving..." : "Save Note"}
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="p-6 space-y-4">
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Jot down important details, action items, or objections..."
+                    className="w-full bg-white border border-[#EADFD5] rounded-2xl p-4 text-stone-900 text-sm font-sans focus:ring-2 focus:ring-emerald-500/30 focus:border-[#059669] outline-none transition-all placeholder:text-stone-400 h-44 resize-none"
+                  />
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      onClick={() => setIsNotesModalOpen(false)}
+                      className="px-6 py-2.5 rounded-full border border-[#EADFD5] text-stone-700 font-mono text-xs uppercase tracking-wider font-bold hover:bg-stone-100 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveNotes}
+                      disabled={isSavingNotes || !notes.trim()}
+                      className="px-6 py-2.5 rounded-full bg-[#059669] hover:bg-[#047857] text-white font-mono text-xs uppercase tracking-wider font-bold shadow-md transition-all disabled:opacity-50"
+                    >
+                      {isSavingNotes ? "Saving..." : "Save Note"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
